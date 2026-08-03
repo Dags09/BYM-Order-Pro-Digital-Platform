@@ -1,0 +1,10 @@
+services:
+    - type: web
+      name: BYM-Order-Pro-Backend
+      env: node
+      plan: starter
+      buildCommand: npm install
+      startCommand: npm start
+      repo: https://github.com/Dags09/BYM-Order-Pro-Digital-Platform
+      branch: main
+      rootDir: backend
