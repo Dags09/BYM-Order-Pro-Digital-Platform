@@ -5,7 +5,7 @@ import {
     faXmark,
     faTriangleExclamation,
 } from "@fortawesome/free-solid-svg-icons";
-import type { ToastType } from "../../types/ui";
+import type { ToastType } from "../../../types/ui";
 
 interface ToastProps {
     msg: string;

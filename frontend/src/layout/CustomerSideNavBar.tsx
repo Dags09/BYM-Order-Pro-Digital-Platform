@@ -33,7 +33,7 @@ type CartItem = {
     imageUrl?: string;
     qty: number;
     stock?: number;
-    category?: { name?: string };
+    category?: { name?: string } | null;
     [key: string]: any;
 };
 

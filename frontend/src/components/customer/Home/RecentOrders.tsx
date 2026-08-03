@@ -49,7 +49,10 @@ export default function RecentOrders() {
                             STATUS_CONFIG[
                                 o.status as keyof typeof STATUS_CONFIG
                             ] ?? STATUS_CONFIG.pending;
-                        const thumb = o.items?.[0]?.product?.imageUrl;
+                        const thumb =
+                            typeof o.items?.[0]?.product !== "string"
+                                ? o.items?.[0]?.product?.imageUrl
+                                : undefined;
                         return (
                             <button
                                 key={o._id}

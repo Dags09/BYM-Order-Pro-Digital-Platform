@@ -1,5 +1,4 @@
 import type { OrderStatus } from "../utils/constants";
-import type { User } from "./user";
 
 export interface FeedbackCustomer {
     firstName?: string;

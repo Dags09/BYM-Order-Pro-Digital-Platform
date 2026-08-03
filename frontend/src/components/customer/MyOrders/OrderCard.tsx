@@ -30,7 +30,10 @@ function OrderCard({
 }) {
     const items = order.items ?? [];
     const itemCount = items.length;
-    const thumb = items[0]?.product?.imageUrl;
+    const thumb =
+        typeof items[0]?.product !== "string"
+            ? items[0]?.product?.imageUrl
+            : undefined;
     const hasFeedback = !!feedbackMap[order._id];
 
     return (
@@ -80,7 +83,8 @@ function OrderCard({
                             key={i}
                             className="flex items-center gap-1.5 bg-gray-50 rounded-lg px-2 py-1"
                         >
-                            {item.product?.imageUrl ? (
+                            {typeof item.product !== "string" &&
+                            item.product?.imageUrl ? (
                                 <img
                                     src={item.product.imageUrl}
                                     alt=""
@@ -93,7 +97,9 @@ function OrderCard({
                                 />
                             )}
                             <span className="text-xs text-slate-500 truncate max-w-[70px]">
-                                {item.product?.name ?? "Item"}
+                                {typeof item.product !== "string"
+                                    ? (item.product?.name ?? "Item")
+                                    : (item.name ?? "Item")}
                             </span>
                             <span className="text-xs text-slate-400">
                                 ×{item.quantity}

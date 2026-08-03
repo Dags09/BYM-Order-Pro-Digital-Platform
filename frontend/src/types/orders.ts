@@ -24,7 +24,9 @@ export interface OrderProduct {
 
 export interface OrderItem {
     product?: OrderProduct | string;
-    quantity: number;
+    name?: string;
+    quantity?: number;
+    qty?: number;
     price: number;
 }
 
@@ -47,6 +49,7 @@ export interface Order {
     _id: string;
     status: OrderStatus;
     paymentStatus?: string;
+    paymentMethod?: string;
     customer?: OrderCustomer;
     items?: OrderItem[];
     totalAmount: number;
@@ -55,4 +58,5 @@ export interface Order {
     shippingAddress?: ShippingAddress;
     scheduledDeliveryDate?: string;
     note?: string;
+    _justPlaced?: boolean;
 }

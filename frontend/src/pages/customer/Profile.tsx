@@ -21,6 +21,7 @@ import {
     EyeBtn,
     type ShowPwField,
 } from "../../components/customer/Profile/EyeBtn.tsx";
+import { Avatar } from "../../components/common/Avatar";
 
 // ── Main ──────────────────────────────────────────────────────────────────────
 export default function Profile() {
@@ -243,7 +244,11 @@ export default function Profile() {
 
     return (
         <>
-            <Toast message={toast.msg} type={toast.type} />
+            <Toast
+                msg={toast.msg}
+                type={toast.type}
+                onClose={() => setToast({ msg: "", type: toast.type })}
+            />
 
             {locWarning && (
                 <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50 w-full max-w-lg px-4">

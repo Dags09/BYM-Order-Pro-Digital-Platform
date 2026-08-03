@@ -27,6 +27,7 @@ import useAuthStore from "../../store/authStore.ts";
 import { peso, fmt } from "../../utils/formatters.ts";
 import { StatCard } from "../../components/admin/Dashboard/StatCard.tsx";
 import { Badge } from "../../components/admin/Dashboard/Badge.tsx";
+import { Avatar } from "../../components/common/Avatar";
 import {
     STOCK_THRESHOLD,
     STATUS_COLOR,
@@ -592,12 +593,6 @@ export default function AdminDashboard() {
                             const name = f.customer
                                 ? `${f.customer.firstName ?? ""} ${f.customer.lastName ?? ""}`.trim()
                                 : "Anonymous";
-                            const initials = name
-                                .split(" ")
-                                .map((n) => n[0])
-                                .join("")
-                                .slice(0, 2)
-                                .toUpperCase();
                             return (
                                 <div
                                     key={f._id}

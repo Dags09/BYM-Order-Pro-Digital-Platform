@@ -3,7 +3,7 @@ import {
     faTriangleExclamation,
     faSpinner,
 } from "@fortawesome/free-solid-svg-icons";
-import type { Order, OrderItem } from "../../../types/orders";
+import type { Order } from "../../../types/orders";
 
 function CancelModal({
     order,

@@ -2,7 +2,7 @@ import { useState } from "react";
 import api from "../../../lib/axios";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faStar, faXmark, faSpinner } from "@fortawesome/free-solid-svg-icons";
-import type { Order, OrderItem } from "../../../types/orders";
+import type { Order } from "../../../types/orders";
 
 function FeedbackModal({
     order,

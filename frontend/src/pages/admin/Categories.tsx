@@ -156,7 +156,7 @@ export default function Categories() {
                             {/* Date */}
                             <p className="text-xs text-slate-300 mt-3">
                                 Created{" "}
-                                {new Date(c.createdAt).toLocaleDateString(
+                                {new Date(c.createdAt ?? "").toLocaleDateString(
                                     "en-PH",
                                     {
                                         month: "short",
