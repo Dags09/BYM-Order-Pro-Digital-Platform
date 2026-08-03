@@ -1,0 +1,81 @@
+import { useState } from "react";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faTrash, faSpinner } from "@fortawesome/free-solid-svg-icons";
+import api from "../../../lib/axios";
+
+interface Category {
+    _id: string;
+    name: string;
+    description?: string;
+}
+
+interface DeleteModalProps {
+    category: Category;
+    onClose: () => void;
+    onSuccess: () => void;
+}
+
+function CategoryDeleteModal({
+    category,
+    onClose,
+    onSuccess,
+}: DeleteModalProps) {
+    const [loading, setLoading] = useState(false);
+
+    const handleDelete = async () => {
+        setLoading(true);
+        try {
+            await api.delete(`/category/delete-category/${category._id}`);
+            onSuccess();
+        } catch (err) {
+            console.error(err);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    return (
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
+            <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6 text-center">
+                <div className="w-14 h-14 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <FontAwesomeIcon
+                        icon={faTrash}
+                        className="text-red-500 text-xl"
+                    />
+                </div>
+                <h3 className="font-bold text-slate-800 text-lg mb-2">
+                    Delete Category
+                </h3>
+                <p className="text-slate-400 text-sm mb-6">
+                    Are you sure you want to delete{" "}
+                    <span className="font-semibold text-slate-600">
+                        "{category.name}"
+                    </span>
+                    ? Products under this category may be affected.
+                </p>
+                <div className="flex gap-3">
+                    <button
+                        onClick={onClose}
+                        className="flex-1 py-2.5 rounded-xl border border-gray-200 text-slate-600 text-sm hover:bg-gray-50 transition"
+                    >
+                        Cancel
+                    </button>
+                    <button
+                        onClick={handleDelete}
+                        disabled={loading}
+                        className="flex-1 py-2.5 rounded-xl bg-red-500 hover:bg-red-600 text-white text-sm font-medium transition disabled:opacity-60 flex items-center justify-center gap-2"
+                    >
+                        {loading && (
+                            <FontAwesomeIcon
+                                icon={faSpinner}
+                                className="animate-spin"
+                            />
+                        )}
+                        {loading ? "Deleting..." : "Delete"}
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+}
+export { CategoryDeleteModal };
