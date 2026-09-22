@@ -33,6 +33,10 @@ const productSchema = new mongoose.Schema({
         default: null,
         trim: true,
         match: [/^https?:\/\/.+/, "Please provide a valid URL"]
+    },
+    addedBy: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User'
     }
 }, {
     timestamps: true

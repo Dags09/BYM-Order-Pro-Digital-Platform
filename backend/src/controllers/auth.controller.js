@@ -8,7 +8,6 @@ import {
     sendAccountStatusEmail,
 } from "../service/emailStaff.service.js";
 
-// Generate a random hex color like #a1b2c3
 const generateRandomHexColor = () => {
     const hex = Math.floor(Math.random() * 0xffffff)
         .toString(16)
@@ -16,7 +15,6 @@ const generateRandomHexColor = () => {
     return `#${hex}`;
 };
 
-// Generate JWT tokens
 const generateTokens = (userId) => {
     const accessToken = jwt.sign({ userId }, ENV.JWT_SECRET, {
         expiresIn: ENV.JWT_EXPIRES_IN || "15m",
@@ -29,31 +27,31 @@ const generateTokens = (userId) => {
     return { accessToken, refreshToken };
 };
 
-// Set cookies
-const setAuthCookies = (res, accessToken, refreshToken) => {
+const authCookieOptions = () => {
     const isProduction = process.env.NODE_ENV === "production";
-
-    // Access token cookie - accessible to JavaScript for client-side token management
-    res.cookie("accessToken", accessToken, {
-        httpOnly: false, // Allow JavaScript access
+    return {
         secure: isProduction,
         sameSite: isProduction ? "strict" : "lax",
-        maxAge: 15 * 60 * 1000, // 15 minutes
+    };
+};
+
+const setAuthCookies = (res, accessToken, refreshToken) => {
+    res.cookie("accessToken", accessToken, {
+        ...authCookieOptions(),
+        httpOnly: false,
+        maxAge: 15 * 60 * 1000,
     });
 
-    // Refresh token cookie - httpOnly for security
     res.cookie("refreshToken", refreshToken, {
+        ...authCookieOptions(),
         httpOnly: true,
-        secure: isProduction,
-        sameSite: isProduction ? "strict" : "lax",
-        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+        maxAge: 7 * 24 * 60 * 60 * 1000,
     });
 };
 
-// Clear cookies
 const clearAuthCookies = (res) => {
-    res.clearCookie("accessToken");
-    res.clearCookie("refreshToken");
+    res.clearCookie("accessToken", authCookieOptions());
+    res.clearCookie("refreshToken", authCookieOptions());
 };
 
 const generatePasswordResetToken = () => crypto.randomBytes(32).toString("hex");
@@ -63,14 +61,20 @@ export const login = async (req, res) => {
     try {
         const { username, password } = req.body;
 
-        if (!username || !password) {
+        if (!username) {
             return res.status(400).json({
                 success: false,
-                message: "Username and password are required.",
+                message: "Username is required.",
             });
         }
 
-        // Find user by username or email
+        if (!password) {
+            return res.status(400).json({
+                success: false,
+                message: "Password is required.",
+            });
+        }
+
         const user = await User.findOne({
             $or: [{ username }, { email: username.toLowerCase() }],
         });
@@ -82,7 +86,6 @@ export const login = async (req, res) => {
             });
         }
 
-        // Check if account is active
         if (!user.isActive) {
             return res.status(401).json({
                 success: false,
@@ -90,15 +93,18 @@ export const login = async (req, res) => {
             });
         }
 
-        // Check if email is verified (for staff accounts)
-        if (user.role !== "admin" && !user.emailVerified) {
-            return res.status(401).json({
-                success: false,
-                message: "Please verify your email before logging in.",
-            });
-        }
+        // if (
+        //     user.role !== "admin" &&
+        //     user.role !== "customer" &&
+        //      user.role !== "manager" &&
+        //     !user.emailVerified
+        // ) {
+        //     return res.status(401).json({
+        //         success: false,
+        //         message: "Please verify your email before logging in.",
+        //     });
+        // }
 
-        // Verify password
         const isPasswordValid = await user.comparePassword(password);
         if (!isPasswordValid) {
             return res.status(401).json({
@@ -107,28 +113,23 @@ export const login = async (req, res) => {
             });
         }
 
-        // Update login history
         user.loginHistory.push({
             ipAddress: req.ip || req.connection.remoteAddress,
             device: req.headers["user-agent"] || "Unknown",
         });
 
-        // Keep only last 10 login records
         if (user.loginHistory.length > 10) {
             user.loginHistory = user.loginHistory.slice(-10);
         }
 
         user.lastLogin = new Date();
-        // Ensure badgeColor is set for older users (assign once)
         if (!user.badgeColor) {
             user.badgeColor = generateRandomHexColor();
         }
         await user.save();
 
-        // Generate tokens
         const { accessToken, refreshToken } = generateTokens(user._id);
 
-        // Set cookies
         setAuthCookies(res, accessToken, refreshToken);
 
         res.status(200).json({
@@ -212,7 +213,7 @@ export const registerStaff = async (req, res) => {
                 message: "Invalid email format.",
             });
         }
-        const validRoles = ["admin", "staff"];
+        const validRoles = ["staff", "manager"];
         if (!validRoles.includes(role)) {
             return res.status(400).json({
                 success: false,
@@ -229,10 +230,23 @@ export const registerStaff = async (req, res) => {
             $or: [{ username }, { email }],
         });
 
-        if (existingUser) {
+        if (
+            existingUser &&
+            email.toLowerCase() === existingUser.email.toLowerCase()
+        ) {
             return res.status(400).json({
                 success: false,
-                message: "Username or email already exists.",
+                message: "Email already exists.",
+            });
+        }
+
+        if (
+            existingUser &&
+            username.toLowerCase() === existingUser.username.toLowerCase()
+        ) {
+            return res.status(400).json({
+                success: false,
+                message: "Username already exists.",
             });
         }
 
@@ -368,18 +382,6 @@ export const registerCustomer = async (req, res) => {
             });
         }
 
-        // Check if username or email already exists
-        const existingUser = await User.findOne({
-            $or: [{ username }, { email }],
-        });
-
-        if (existingUser) {
-            return res.status(400).json({
-                success: false,
-                message: "Username or email already exists.",
-            });
-        }
-
         // Validate Philippine phone number format
         const phoneRegex = /^(\+63|0)9\d{9}$/;
         if (!phoneRegex.test(phoneNumber)) {
@@ -390,12 +392,45 @@ export const registerCustomer = async (req, res) => {
             });
         }
 
-        // Generate token first
-        const verificationToken = generatePasswordResetToken();
-
+        // Normalize phone number before checking duplicates
         const normalizedPhone = phoneNumber.startsWith("09")
             ? "+63" + phoneNumber.slice(1)
             : phoneNumber;
+
+        // Check if username, email, or phone already exists
+        const existingUser = await User.findOne({
+            $or: [{ username }, { email }, { phoneNumber: normalizedPhone }],
+        });
+
+        if (
+            existingUser &&
+            email.toLowerCase() === existingUser.email.toLowerCase()
+        ) {
+            return res.status(400).json({
+                success: false,
+                message: "Email already exists.",
+            });
+        }
+
+        if (
+            existingUser &&
+            username.toLowerCase() === existingUser.username.toLowerCase()
+        ) {
+            return res.status(400).json({
+                success: false,
+                message: "Username already exists.",
+            });
+        }
+
+        if (existingUser && normalizedPhone === existingUser.phoneNumber) {
+            return res.status(400).json({
+                success: false,
+                message: "Phone number already exists.",
+            });
+        }
+
+        // Generate token first
+        const verificationToken = generatePasswordResetToken();
 
         // Try sending email BEFORE saving user, using req.body values directly
         const emailSent = await sendAccountEmail(
@@ -623,16 +658,10 @@ export const refreshToken = async (req, res) => {
 // Logout
 export const logout = async (req, res) => {
     try {
-        const userId = req.user.id;
-
-        const user = await User.findById(userId);
-        if (!user) {
-            return res.status(404).json({
-                success: false,
-                message: "User not found or does not exist.",
-            });
-        }
-
+        // Logout only needs to clear cookies — it must succeed even when
+        // the access token has already expired (the most common case, since
+        // it only lives 15 minutes), so this intentionally does not require
+        // or depend on a currently-valid access token / req.user.
         clearAuthCookies(res);
 
         res.status(200).json({

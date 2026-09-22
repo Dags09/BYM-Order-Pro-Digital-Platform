@@ -97,6 +97,15 @@ const orderSchema = new mongoose.Schema(
             type: String, // Cloudinary URL
             default: null,
         },
+        paymentProofUploadedBy: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "User",
+            default: null,
+        },
+        paymentProofUploadedAt: {
+            type: Date,
+            default: null,
+        },
     },
     {
         timestamps: true,

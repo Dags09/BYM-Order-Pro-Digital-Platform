@@ -18,3 +18,10 @@ to login as "Customer"
     "username": "Custumer",
     "password": "custumer"
 }
+
+to login as "Manager"
+
+{
+    "username": "manager",
+    "password": "BYMPassword2026@@"
+}

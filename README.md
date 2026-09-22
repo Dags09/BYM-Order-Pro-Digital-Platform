@@ -137,10 +137,3 @@ npm start
 - Rotate credentials if secrets are accidentally leaked.
 
 ---
-
-If you want, I can:
-
-- create `backend/.env.example` and `frontend/.env.example` now (no secrets),
-- then commit and push these changes for you.
-
-Tell me if you want me to add the example env files and commit them.

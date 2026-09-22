@@ -1,6 +1,6 @@
-import jwt from 'jsonwebtoken';
-import User from '../models/user.model.js';
-import { ENV } from '../config/env.js';
+import jwt from "jsonwebtoken";
+import User from "../models/user.model.js";
+import { ENV } from "../config/env.js";
 
 // Verify JWT token from cookies or Authorization header
 export const verifyToken = async (req, res, next) => {
@@ -10,7 +10,7 @@ export const verifyToken = async (req, res, next) => {
 
         // Check Authorization header
         const authHeader = req.headers.authorization;
-        if (authHeader && authHeader.startsWith('Bearer ')) {
+        if (authHeader && authHeader.startsWith("Bearer ")) {
             accessToken = authHeader.substring(7);
         }
 
@@ -22,40 +22,40 @@ export const verifyToken = async (req, res, next) => {
         if (!accessToken) {
             return res.status(401).json({
                 success: false,
-                message: 'Access token not found. Please login.'
+                message: "Access token not found. Please login.",
             });
         }
 
         const decoded = jwt.verify(accessToken, ENV.JWT_SECRET);
-        const user = await User.findById(decoded.userId).select('-password');
+        const user = await User.findById(decoded.userId).select("-password");
 
         if (!user) {
             return res.status(401).json({
                 success: false,
-                message: 'User not found.'
+                message: "User not found.",
             });
         }
 
         if (!user.isActive) {
             return res.status(401).json({
                 success: false,
-                message: 'Account is disabled. Please contact administrator.'
+                message: "Account is disabled. Please contact administrator.",
             });
         }
 
         req.user = user;
         next();
     } catch (error) {
-        if (error.name === 'TokenExpiredError') {
+        if (error.name === "TokenExpiredError") {
             return res.status(401).json({
                 success: false,
-                message: 'Access token expired. Please refresh your session.'
+                message: "Access token expired. Please refresh your session.",
             });
         }
 
         return res.status(401).json({
             success: false,
-            message: 'Invalid token. Please login again.'
+            message: "Invalid token. Please login again.",
         });
     }
 };
@@ -66,7 +66,7 @@ export const requireRole = (roles) => {
         if (!req.user) {
             return res.status(401).json({
                 success: false,
-                message: 'Authentication required.'
+                message: "Authentication required.",
             });
         }
 
@@ -76,7 +76,7 @@ export const requireRole = (roles) => {
         if (!allowedRoles.includes(userRole)) {
             return res.status(403).json({
                 success: false,
-                message: 'Insufficient permissions to access this resource.'
+                message: "Insufficient permissions to access this resource.",
             });
         }
 
@@ -92,24 +92,24 @@ export const verifyRefreshToken = async (req, res, next) => {
         if (!refreshToken) {
             return res.status(401).json({
                 success: false,
-                message: 'Refresh token not found.'
+                message: "Refresh token not found.",
             });
         }
 
         const decoded = jwt.verify(refreshToken, ENV.JWT_REFRESH_SECRET);
-        const user = await User.findById(decoded.userId).select('-password');
+        const user = await User.findById(decoded.userId).select("-password");
 
         if (!user) {
             return res.status(401).json({
                 success: false,
-                message: 'User not found.'
+                message: "User not found.",
             });
         }
 
         if (!user.isActive) {
             return res.status(401).json({
                 success: false,
-                message: 'Account is disabled.'
+                message: "Account is disabled.",
             });
         }
 
@@ -118,28 +118,7 @@ export const verifyRefreshToken = async (req, res, next) => {
     } catch (error) {
         return res.status(401).json({
             success: false,
-            message: 'Invalid refresh token.'
+            message: "Invalid refresh token.",
         });
     }
 };
-
-// Optional authentication (doesn't fail if no token)
-// export const optionalAuth = async (req, res, next) => {
-//     try {
-//         const accessToken = req.cookies.accessToken;
-
-//         if (accessToken) {
-//             const decoded = jwt.verify(accessToken, ENV.JWT_SECRET);
-//             const user = await User.findById(decoded.userId).select('-password');
-
-//             if (user && user.isActive) {
-//                 req.user = user;
-//             }
-//         }
-
-//         next();
-//     } catch (error) {
-//         // Continue without authentication
-//         next();
-//     }
-// };

@@ -1,27 +1,33 @@
-const peso = (n: number | null | undefined) =>
+export const formatPrice = (price: number) =>
     new Intl.NumberFormat("en-PH", {
         style: "currency",
         currency: "PHP",
         maximumFractionDigits: 0,
-    }).format(n ?? 0);
+    }).format(price);
 
-const fmt = (d: string | Date | null | undefined) =>
-    d
-        ? new Date(d).toLocaleDateString("en-PH", {
-              month: "short",
-              day: "numeric",
-              year: "numeric",
-              hour: "2-digit",
-              minute: "2-digit",
-          })
-        : "—";
+export const RESTORE_DELAY_MS = 1000;
 
-interface NameLike {
-    firstName?: string;
-    lastName?: string;
+export function formatShortDate(dateStr: string) {
+    return new Date(dateStr).toLocaleDateString("en-PH", {
+        month: "short",
+        day: "numeric",
+    });
 }
 
-const initials = (u: NameLike | null | undefined) =>
-    `${u?.firstName?.[0] ?? ""}${u?.lastName?.[0] ?? ""}`.toUpperCase() || "?";
+export function formatDateTime(dateStr: string) {
+    return new Date(dateStr).toLocaleString("en-PH", {
+        month: "short",
+        day: "numeric",
+        hour: "numeric",
+        minute: "2-digit",
+    });
+}
 
-export { peso, fmt, initials };
+export function isSameDay(dateStr: string, reference: Date = new Date()) {
+    const d = new Date(dateStr);
+    return (
+        d.getFullYear() === reference.getFullYear() &&
+        d.getMonth() === reference.getMonth() &&
+        d.getDate() === reference.getDate()
+    );
+}

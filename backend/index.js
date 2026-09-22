@@ -10,6 +10,8 @@ import productRoutes from "./src/routes/product.routes.js";
 import orderRoutes from "./src/routes/order.routes.js";
 import feedbackRoutes from "./src/routes/feedback.routes.js";
 import qrcodeRoutes from "./src/routes/qrcode.routes.js";
+import driverRoutes from "./src/routes/driver.routes.js";
+import paymentRoutes from "./src/routes/payment.routes.js";
 
 // Config
 import { connectDB } from "./src/config/db.js";
@@ -18,15 +20,15 @@ import { ENV } from "./src/config/env.js";
 dotenv.config();
 
 const app = express();
-const server = http.createServer(app);  
+const server = http.createServer(app);
 
 // Socket.io
 const io = new Server(server, {
     cors: {
         origin: ENV.FRONTEND_URL,
         credentials: true,
-        methods: ["GET", "POST"]
-    }
+        methods: ["GET", "POST"],
+    },
 });
 
 // Attach io to every request so controllers can use req.io
@@ -50,21 +52,24 @@ io.on("connection", (socket) => {
 });
 
 // Middleware
-app.use(cors({
-    origin: ENV.FRONTEND_URL,
-    credentials: true,
-}));
+app.use(
+    cors({
+        origin: ENV.FRONTEND_URL,
+        credentials: true,
+    }),
+);
 app.use(express.json());
 app.use(cookieParser());
 
 // Routes
-app.use('/api/v1/auth', authRoutes);
-app.use('/api/v1/category', categoryRoutes);
-app.use('/api/v1/product', productRoutes);
-app.use('/api/v1/order', orderRoutes);
+app.use("/api/v1/auth", authRoutes);
+app.use("/api/v1/category", categoryRoutes);
+app.use("/api/v1/product", productRoutes);
+app.use("/api/v1/order", orderRoutes);
 app.use("/api/v1/feedback", feedbackRoutes);
 app.use("/api/v1/qrcode", qrcodeRoutes);
-
+app.use("/api/v1/driver", driverRoutes);
+app.use("/api/v1/order", paymentRoutes);
 
 // Use server.listen instead of app.listen
 server.listen(ENV.PORT, () => {

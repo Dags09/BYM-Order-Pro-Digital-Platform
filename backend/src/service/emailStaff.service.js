@@ -1,6 +1,6 @@
-import nodemailer from 'nodemailer';
-import { randomBytes } from 'crypto';
-import { ENV } from '../config/env.js';
+import nodemailer from "nodemailer";
+import { randomBytes } from "crypto";
+import { ENV } from "../config/env.js";
 
 // Create transporter
 const createTransporter = () =>
@@ -13,22 +13,22 @@ const createTransporter = () =>
             pass: ENV.EMAIL_PASS,
         },
     });
-// Password Generation 
+// Password Generation
 
 export const generateSecurePassword = (length = 12) => {
-    const charset = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*';
+    const charset =
+        "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*";
     const result = [];
     while (result.length < length) {
         const byte = randomBytes(1)[0];
         if (byte < Math.floor(256 / charset.length) * charset.length)
             result.push(charset[byte % charset.length]);
     }
-    return result.join('');
+    return result.join("");
 };
 
-
 //----------------------------
-// HTML Template Helpers 
+// HTML Template Helpers
 const BASE_STYLES = `
     body {
         font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
@@ -110,7 +110,7 @@ const BASE_STYLES = `
  * @param {string} opts.extraStyles  - Additional <style> rules
  * @param {string} opts.body         - Inner HTML for the .content div
  */
-const buildEmail = ({ title, headerGrad, extraStyles = '', body }) => `
+const buildEmail = ({ title, headerGrad, extraStyles = "", body }) => `
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -148,17 +148,19 @@ const ctaButton = (href, label) =>
 //Render Grey Background
 const infoCard = (rows) => `
     <div class="card" style="background:#f1f5f9; border:2px solid #e2e8f0;">
-        ${rows.map(([label, value, valueStyle = '']) => `
+        ${rows
+            .map(
+                ([label, value, valueStyle = ""]) => `
             <div class="detail-row">
                 <span class="detail-label">${label}</span>
                 <span style="width:10px;"></span>
                 <span class="detail-value" style="word-break:break-word; max-width:100%; ${valueStyle}">${value}</span>
-            </div>`
-        ).join('')}
+            </div>`,
+            )
+            .join("")}
     </div>`;
 
 //---------------------------------------------
-
 
 const sendMail = async (mailOptions, label) => {
     try {
@@ -177,8 +179,8 @@ export const sendAccountEmail = async (userData, verificationToken) => {
     const verificationUrl = `${ENV.FRONTEND_URL}/verify?token=${verificationToken}`;
 
     const html = buildEmail({
-        title: 'Account Created',
-        headerGrad: 'linear-gradient(135deg,#1e293b 0%,#334155 100%)',
+        title: "Account Created",
+        headerGrad: "linear-gradient(135deg,#1e293b 0%,#334155 100%)",
         extraStyles: `
             .verify-card {
                 background: linear-gradient(135deg,#dbeafe 0%,#bfdbfe 100%);
@@ -198,14 +200,15 @@ export const sendAccountEmail = async (userData, verificationToken) => {
                 Below are your account details:
             </p>
             ${infoCard([
-                ['Full Name:', ` ${userData.firstName} ${userData.lastName}`],
-                ['Email: ', userData.email],
-                ['Phone Number: ', userData.phoneNumber],
+                ["Full Name:", ` ${userData.firstName} ${userData.lastName}`],
+                ["Email: ", userData.email],
+                ["Phone Number: ", userData.phoneNumber],
+                ["Role: ", userData.role],
             ])}
             <div class="card verify-card">
                 <p class="card-title">✅ Next Step: Verify Your Email</p>
                 <p>To complete your account setup, please verify your email address:</p>
-                ${ctaButton(verificationUrl, 'Verify Email Address')}
+                ${ctaButton(verificationUrl, "Verify Email Address")}
             </div>
             <div class="warn-banner">⚠️ Keep your password secure and do not share it with anyone.</div>
             <p style="margin:32px 0 0 0; color:#64748b; font-size:16px; line-height:1.6;">
@@ -214,18 +217,22 @@ export const sendAccountEmail = async (userData, verificationToken) => {
     });
 
     return sendMail(
-        { from: ENV.SMTP_FROM, to: userData.email, subject: 'Your Account Details - BYM Order Pro Digital Platform', html },
-        'Account'
+        {
+            from: ENV.SMTP_FROM,
+            to: userData.email,
+            subject: "Your Account Details - BYM Order Pro Digital Platform",
+            html,
+        },
+        "Account",
     );
 };
-
 
 export const sendPasswordResetEmail = async (userData, resetToken) => {
     const resetUrl = `${ENV.FRONTEND_URL}/reset-password?token=${resetToken}`;
 
     const html = buildEmail({
-        title: 'Password Reset',
-        headerGrad: 'linear-gradient(135deg,#1d4ed8 0%,#1e3a8a 100%)',
+        title: "Password Reset",
+        headerGrad: "linear-gradient(135deg,#1d4ed8 0%,#1e3a8a 100%)",
         extraStyles: `
             .reset-card { background: linear-gradient(135deg,#eff6ff 0%,#bfdbfe 100%); border: 2px solid #3b82f6; text-align: center; }
             .reset-card .card-title { color: #1d4ed8; }
@@ -242,7 +249,7 @@ export const sendPasswordResetEmail = async (userData, resetToken) => {
             </p>
             <div class="card reset-card">
                 <p class="card-title">Reset Your Password</p>
-                ${ctaButton(resetUrl, 'Create a New Password')}
+                ${ctaButton(resetUrl, "Create a New Password")}
                 <p class="token-info">
                     This link will expire in <strong>1 hour</strong>.
                     If it expires, you can request a new reset from the login page.
@@ -258,33 +265,40 @@ export const sendPasswordResetEmail = async (userData, resetToken) => {
     });
 
     return sendMail(
-        { from: ENV.SMTP_FROM, to: userData.email, subject: 'Password Reset Instructions - BYM Order Pro Digital Platform', html },
-        'Password reset'
+        {
+            from: ENV.SMTP_FROM,
+            to: userData.email,
+            subject:
+                "Password Reset Instructions - BYM Order Pro Digital Platform",
+            html,
+        },
+        "Password reset",
     );
 };
 
-
 // Notifies a staff member that their account has been enabled or disabled.
 export const sendAccountStatusEmail = async (userData, isEnabled) => {
-    const statusLabel   = isEnabled ? 'Enabled'  : 'Disabled';
-    const statusIcon    = isEnabled ? '✅'        : '❌';
-    const statusColor   = isEnabled ? '#059669'   : '#dc2626';
-    const bannerGrad    = isEnabled
-        ? 'linear-gradient(135deg,#ecfdf5 0%,#d1fae5 100%)'
-        : 'linear-gradient(135deg,#fef2f2 0%,#fee2e2 100%)';
-    const bannerBorder  = isEnabled ? '#a7f3d0'   : '#fecaca';
-    const actionGrad    = isEnabled
-        ? 'linear-gradient(135deg,#fef3c7 0%,#fde68a 100%)'
-        : 'linear-gradient(135deg,#fef2f2 0%,#fecaca 100%)';
-    const actionBorder  = isEnabled ? '#f59e0b'   : '#f87171';
-    const actionTitle   = isEnabled ? '🎉 Account Reactivated!' : '⚠️ Account Deactivated';
+    const statusLabel = isEnabled ? "Enabled" : "Disabled";
+    const statusIcon = isEnabled ? "✅" : "❌";
+    const statusColor = isEnabled ? "#059669" : "#dc2626";
+    const bannerGrad = isEnabled
+        ? "linear-gradient(135deg,#ecfdf5 0%,#d1fae5 100%)"
+        : "linear-gradient(135deg,#fef2f2 0%,#fee2e2 100%)";
+    const bannerBorder = isEnabled ? "#a7f3d0" : "#fecaca";
+    const actionGrad = isEnabled
+        ? "linear-gradient(135deg,#fef3c7 0%,#fde68a 100%)"
+        : "linear-gradient(135deg,#fef2f2 0%,#fecaca 100%)";
+    const actionBorder = isEnabled ? "#f59e0b" : "#f87171";
+    const actionTitle = isEnabled
+        ? "🎉 Account Reactivated!"
+        : "⚠️ Account Deactivated";
     const actionMessage = isEnabled
-        ? 'Your account is now active and you can access the system. If you experience any issues logging in, please contact the administrator.'
-        : 'Your account access has been temporarily suspended. Please contact your administrator for more information.';
+        ? "Your account is now active and you can access the system. If you experience any issues logging in, please contact the administrator."
+        : "Your account access has been temporarily suspended. Please contact your administrator for more information.";
 
     const html = buildEmail({
         title: `Account ${statusLabel}`,
-        headerGrad: 'linear-gradient(135deg,#1e293b 0%,#334155 100%)',
+        headerGrad: "linear-gradient(135deg,#1e293b 0%,#334155 100%)",
         extraStyles: `
             .status-banner {
                 background: ${bannerGrad}; border: 3px solid ${bannerBorder};
@@ -308,10 +322,14 @@ export const sendAccountStatusEmail = async (userData, isEnabled) => {
                 This is to inform you that your account status in the BYM Order Pro Digital Platform has been updated.
             </p>
             ${infoCard([
-                ['Full Name: ', `${userData.firstName} ${userData.lastName}`],
-                ['Email: ', userData.email],
-                ['Phone Number: ', userData.phoneNumber],
-                ['Current Status: ', isEnabled ? 'Active' : 'Inactive', `color:${statusColor}; font-weight:600; font-size:18px;`],
+                ["Full Name: ", `${userData.firstName} ${userData.lastName}`],
+                ["Email: ", userData.email],
+                ["Phone Number: ", userData.phoneNumber],
+                [
+                    "Current Status: ",
+                    isEnabled ? "Active" : "Inactive",
+                    `color:${statusColor}; font-weight:600; font-size:18px;`,
+                ],
             ])}
             <div class="action-card">
                 <p class="action-title">${actionTitle}</p>
@@ -323,33 +341,55 @@ export const sendAccountStatusEmail = async (userData, isEnabled) => {
     });
 
     return sendMail(
-        { from: ENV.SMTP_FROM, to: userData.email, subject: `Account ${statusLabel} - BYM Order Pro Digital Platform`, html },
-        `Account ${statusLabel.toLowerCase()}`
+        {
+            from: ENV.SMTP_FROM,
+            to: userData.email,
+            subject: `Account ${statusLabel} - BYM Order Pro Digital Platform`,
+            html,
+        },
+        `Account ${statusLabel.toLowerCase()}`,
     );
 };
 
 // Notifies a driver that they have been assigned to a delivery, including order details and customer information.
-export const sendDriverAssignmentEmail = async ({ to, driverName, orderId, customer, shippingAddress, items, totalAmount, scheduledDeliveryDate, note }) => {
-    const itemRows = items.map(item => `
+export const sendDriverAssignmentEmail = async ({
+    to,
+    driverName,
+    orderId,
+    customer,
+    shippingAddress,
+    items,
+    totalAmount,
+    scheduledDeliveryDate,
+    note,
+}) => {
+    const itemRows = items
+        .map(
+            (item) => `
         <tr>
             <td>${item.product.name}</td>
             <td style="text-align:center;">${item.quantity}</td>
             <td style="text-align:right;">₱${item.price.toFixed(2)}</td>
             <td style="text-align:right;">₱${(item.price * item.quantity).toFixed(2)}</td>
         </tr>
-    `).join('');
+    `,
+        )
+        .join("");
 
-    const formattedDate = new Date(scheduledDeliveryDate).toLocaleString('en-PH', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-    });
+    const formattedDate = new Date(scheduledDeliveryDate).toLocaleString(
+        "en-PH",
+        {
+            year: "numeric",
+            month: "long",
+            day: "numeric",
+            hour: "2-digit",
+            minute: "2-digit",
+        },
+    );
 
     const html = buildEmail({
-        title: 'New Delivery Assignment',
-        headerGrad: 'linear-gradient(135deg,#1e293b 0%,#334155 100%)',
+        title: "New Delivery Assignment",
+        headerGrad: "linear-gradient(135deg,#1e293b 0%,#334155 100%)",
         extraStyles: `
             .assignment-banner {
                 background: linear-gradient(135deg,#dbeafe 0%,#bfdbfe 100%);
@@ -373,29 +413,37 @@ export const sendDriverAssignmentEmail = async ({ to, driverName, orderId, custo
 
             <p class="section-title">🗓️ Scheduled Delivery</p>
             ${infoCard([
-                ['Delivery Date:', formattedDate, 'color:#1d4ed8; font-weight:700;'],
+                [
+                    "Delivery Date:",
+                    formattedDate,
+                    "color:#1d4ed8; font-weight:700;",
+                ],
             ])}
 
             <p class="section-title">👤 Customer Information</p>
             ${infoCard([
-                ['Name:', customer.name],
-                ['Phone:', customer.phone],
-                ['Email:', customer.email],
+                ["Name:", customer.name],
+                ["Phone:", customer.phone],
+                ["Email:", customer.email],
             ])}
 
             <p class="section-title">📍 Delivery Address</p>
             ${infoCard([
-                ['Street:', shippingAddress.street],
-                ['City:', shippingAddress.city],
-                ['Province:', shippingAddress.province],
-                ['Zip Code:', shippingAddress.zipCode],
+                ["Street:", shippingAddress.street],
+                ["City:", shippingAddress.city],
+                ["Province:", shippingAddress.province],
+                ["Zip Code:", shippingAddress.zipCode],
             ])}
-            ${note ? `
+            ${
+                note
+                    ? `
                 <p class="section-title">📝 Note from Customer</p>
                 <div class="card" style="background:#fefce8; border:2px solid #fde68a;">
                     <p style="margin:0; color:#92400e; font-size:16px; line-height:1.6;">${note}</p>
                 </div>
-            ` : ''}
+            `
+                    : ""
+            }
 
             <p class="section-title">📦 Order Items</p>
             <div class="card" style="background:#f1f5f9; border:2px solid #e2e8f0; padding: 0; overflow: hidden;">
@@ -421,12 +469,16 @@ export const sendDriverAssignmentEmail = async ({ to, driverName, orderId, custo
             <p style="margin:32px 0 0 0; color:#64748b; font-size:16px; line-height:1.6;">
                 If you have any questions, please contact the administrator.
             </p>
-        `
+        `,
     });
 
     return sendMail(
-        { from: ENV.SMTP_FROM, to, subject: `New Delivery Assignment - Order #${orderId} - BYM Order Pro Digital Platform`, html },
-        'Driver assignment'
+        {
+            from: ENV.SMTP_FROM,
+            to,
+            subject: `New Delivery Assignment - Order #${orderId} - BYM Order Pro Digital Platform`,
+            html,
+        },
+        "Driver assignment",
     );
 };
-

@@ -1,7 +1,6 @@
 import Order from "../models/order.model.js";
 import Product from "../models/product.model.js";
-import User from "../models/user.model.js";
-import { sendDriverAssignmentEmail } from "../service/emailStaff.service.js";
+import History from "../models/history.model.js";
 import {
     sendOrderReceipt,
     sendOrderStatusEmail,
@@ -10,6 +9,12 @@ import {
 // Create order
 export const createOrder = async (req, res) => {
     try {
+        if (req.user.role === "customer" && !req.user.emailVerified) {
+            return res.status(403).json({
+                message: "Please verify your email before placing an order.",
+            });
+        }
+
         const {
             items,
             shippingAddress,
@@ -28,11 +33,9 @@ export const createOrder = async (req, res) => {
                     .status(404)
                     .json({ message: `Product ${item.productId} not found` });
             if (product.stock < item.quantity)
-                return res
-                    .status(400)
-                    .json({
-                        message: `Insufficient stock for ${product.name}`,
-                    });
+                return res.status(400).json({
+                    message: `Insufficient stock for ${product.name}`,
+                });
 
             orderItems.push({
                 product: product._id,
@@ -104,6 +107,7 @@ export const getAllOrders = async (req, res) => {
         const orders = await Order.find()
             .populate("customer", "firstName lastName email phoneNumber")
             .populate("driver", "firstName lastName email phoneNumber")
+            .populate("paymentProofUploadedBy", "firstName lastName email")
             .populate("items.product", "name price imageUrl");
         res.status(200).json(orders);
     } catch (error) {
@@ -129,6 +133,7 @@ export const getOrderById = async (req, res) => {
         const order = await Order.findById(req.params.id)
             .populate("customer", "firstName lastName email phoneNumber")
             .populate("driver", "firstName lastName email phoneNumber")
+            .populate("paymentProofUploadedBy", "firstName lastName email")
             .populate("items.product", "name price imageUrl");
         if (!order) return res.status(404).json({ message: "Order not found" });
         res.status(200).json(order);
@@ -141,6 +146,21 @@ export const getOrderById = async (req, res) => {
 export const updateOrderStatus = async (req, res) => {
     try {
         const { status } = req.body;
+
+        const existingOrder = await Order.findById(req.params.id);
+        if (!existingOrder)
+            return res.status(404).json({ message: "Order not found" });
+
+        // Orders can only move to processing/shipped/delivered once a
+        // driver has been assigned (see assignDriver, which sets both
+        // together). Cancelling or reverting to pending is always allowed.
+        const requiresDriver = ["processing", "shipped", "delivered"];
+        if (requiresDriver.includes(status) && !existingOrder.driver) {
+            return res.status(400).json({
+                message:
+                    "Assign a driver before moving this order past pending.",
+            });
+        }
 
         const order = await Order.findByIdAndUpdate(
             req.params.id,
@@ -202,155 +222,20 @@ export const cancelOrder = async (req, res) => {
     }
 };
 
-// Assign driver to order (admin)
-export const assignDriver = async (req, res) => {
+// Get driver-assignment history for an order, or across all orders (admin only)
+export const getOrderHistory = async (req, res) => {
     try {
-        const { driverId, scheduledDeliveryDate } = req.body;
+        const { orderId } = req.query;
+        const filter = orderId
+            ? { entityType: "order", entity: orderId }
+            : { entityType: "order" };
 
-        // validate scheduled date
-        if (!scheduledDeliveryDate) {
-            return res
-                .status(400)
-                .json({ message: "Scheduled delivery date is required" });
-        }
+        const history = await History.find(filter)
+            .populate("performedBy", "firstName lastName email role")
+            .sort({ createdAt: -1 });
 
-        const scheduleDate = new Date(scheduledDeliveryDate);
-        if (isNaN(scheduleDate.getTime())) {
-            return res.status(400).json({ message: "Invalid date format" });
-        }
-
-        if (scheduleDate < new Date()) {
-            return res
-                .status(400)
-                .json({
-                    message: "Scheduled delivery date cannot be in the past",
-                });
-        }
-
-        const driver = await User.findById(driverId);
-        if (!driver)
-            return res.status(404).json({ message: "Driver not found" });
-        if (driver.role !== "staff")
-            return res
-                .status(400)
-                .json({ message: "User is not a staff/driver" });
-
-        const order = await Order.findByIdAndUpdate(
-            req.params.id,
-            {
-                driver: driverId,
-                status: "processing",
-                scheduledDeliveryDate: scheduleDate,
-            },
-            { new: true },
-        )
-            .populate("customer", "firstName lastName email phoneNumber")
-            .populate("driver", "firstName lastName email phoneNumber")
-            .populate("items.product", "name price imageUrl");
-
-        if (!order) return res.status(404).json({ message: "Order not found" });
-
-        // send email to driver
-        await sendDriverAssignmentEmail({
-            to: driver.email,
-            driverName: `${driver.firstName} ${driver.lastName}`,
-            orderId: order._id,
-            customer: {
-                name: `${order.customer.firstName} ${order.customer.lastName}`,
-                phone: order.customer.phoneNumber,
-                email: order.customer.email,
-            },
-            shippingAddress: order.shippingAddress,
-            items: order.items,
-            totalAmount: order.totalAmount,
-            scheduledDeliveryDate: scheduleDate,
-            note: order.note ?? null,
-        });
-
-        await sendOrderStatusEmail({
-            to: order.customer.email,
-            customerName: `${order.customer.firstName} ${order.customer.lastName}`,
-            orderId: order._id,
-            status: "processing",
-            driverLocation: null,
-            scheduledDeliveryDate: scheduleDate,
-        });
-
-        // notify driver via socket
-        req.io.to(driverId.toString()).emit("order:assigned", order);
-
-        // notify customer via socket
-        req.io.to(order.customer._id.toString()).emit("order:status", {
-            orderId: order._id,
-            status: order.status,
-            scheduledDeliveryDate: scheduleDate,
-            driver: {
-                name: `${order.driver.firstName} ${order.driver.lastName}`,
-                phone: order.driver.phoneNumber,
-            },
-        });
-
-        res.status(200).json(order);
-    } catch (error) {
-        res.status(400).json({ message: error.message });
-    }
-};
-
-// Driver updates their location
-export const updateDriverLocation = async (req, res) => {
-    try {
-        const { latitude, longitude } = req.body;
-
-        const order = await Order.findOne({
-            _id: req.params.id,
-            driver: req.user._id,
-        });
-
-        if (!order) return res.status(404).json({ message: "Order not found" });
-
-        order.driverLocation = { latitude, longitude, updatedAt: new Date() };
-        await order.save();
-
-        // emit location to customer in real-time
-        req.io.to(order.customer.toString()).emit("driver:location", {
-            orderId: order._id,
-            latitude,
-            longitude,
-            updatedAt: order.driverLocation.updatedAt,
-        });
-
-        res.status(200).json({
-            message: "Location updated",
-            driverLocation: order.driverLocation,
-        });
+        res.status(200).json(history);
     } catch (error) {
         res.status(500).json({ message: error.message });
-    }
-};
-
-// Customer uploads payment proof for digital payments
-export const uploadPaymentProof = async (req, res) => {
-    try {
-        const order = await Order.findOne({
-            _id: req.params.id,
-            customer: req.user._id,
-        });
-        if (!order) return res.status(404).json({ message: "Order not found" });
-        if (!req.file)
-            return res.status(400).json({ message: "No image uploaded." });
-        if (order.paymentMethod === "cod")
-            return res
-                .status(400)
-                .json({ message: "COD orders don't require payment proof." });
-
-        order.paymentProof = req.file.path;
-        await order.save();
-
-        res.status(200).json({
-            success: true,
-            paymentProof: order.paymentProof,
-        });
-    } catch (error) {
-        res.status(500).json({ message: "Internal server error." });
     }
 };
