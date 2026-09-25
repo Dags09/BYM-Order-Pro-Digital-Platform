@@ -195,7 +195,7 @@ export default function ManagerCategoriesPage() {
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
                         placeholder="Search categories"
-                        className="w-full rounded-md border-2 border-ink/20 bg-kraft/40 py-2 pl-9 pr-3 text-sm text-ink outline-none transition focus:border-crate sm:w-72"
+                        className="w-full rounded-md border-2 border-ink/20 bg-white py-2 pl-9 pr-3 text-sm text-ink outline-none transition focus:border-crate sm:w-72"
                     />
                 </div>
                 <select
@@ -204,7 +204,7 @@ export default function ManagerCategoriesPage() {
                         setSortOption(e.target.value as SortOption)
                     }
                     aria-label="Sort categories"
-                    className="rounded-md border-2 border-ink/20 bg-kraft/40 px-3 py-2 text-sm text-ink outline-none transition focus:border-crate"
+                    className="rounded-md bg-white px-3 py-2 text-sm text-ink outline-none transition focus:border-crate focus:border-2"
                 >
                     <option value="name-asc">Name: A-Z</option>
                     <option value="name-desc">Name: Z-A</option>

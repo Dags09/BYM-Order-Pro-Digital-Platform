@@ -107,7 +107,7 @@ function CategoryDropdown({
                                 onChange("all");
                                 setOpen(false);
                             }}
-                            className={`block w-full px-3 py-2 text-left text-sm transition-colors hover:bg-kraft/50 ${
+                            className={`block w-full px-3 py-2 text-left text-sm transition-colors hover:bg-white ${
                                 value === "all"
                                     ? "bg-crate/10 font-medium text-crate"
                                     : "text-ink"
@@ -389,7 +389,7 @@ export default function ManagerProductsPage() {
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
                             placeholder="Search products"
-                            className="w-full rounded-md border-2 border-ink/20 bg-kraft/40 py-2 pl-9 pr-3 text-sm text-ink outline-none transition focus:border-crate sm:w-64"
+                            className="w-full rounded-md border-2 border-ink/20 bg-white py-2 pl-9 pr-3 text-sm text-ink outline-none transition focus:border-crate sm:w-64"
                         />
                     </div>
                     <div className="sm:w-56">

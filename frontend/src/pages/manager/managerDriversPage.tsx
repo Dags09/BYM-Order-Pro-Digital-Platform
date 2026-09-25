@@ -86,7 +86,7 @@ export default function ManagerDriversPage() {
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
                     placeholder="Search drivers"
-                    className="w-full rounded-md border-2 border-ink/20 bg-kraft/40 py-2 pl-9 pr-3 text-sm text-ink outline-none transition focus:border-crate sm:w-72"
+                    className="w-full rounded-md border-2 border-ink/20 bg-white py-2 pl-9 pr-3 text-sm text-ink outline-none transition focus:border-crate sm:w-72"
                 />
             </div>
 
