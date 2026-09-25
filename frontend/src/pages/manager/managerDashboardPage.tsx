@@ -17,6 +17,21 @@ import type { Order, OrderStatus } from "../../types/order";
 import type { Product } from "../../types/product";
 import { STATUS_COLORS, STATUS_LABELS } from "../../utils/constant";
 
+type DateRangePreset = "today" | "week" | "month" | "year" | "custom";
+
+interface DateRange {
+    from: Date;
+    to: Date;
+}
+
+const DATE_RANGE_OPTIONS: { value: DateRangePreset; label: string }[] = [
+    { value: "today", label: "Today" },
+    { value: "week", label: "This week" },
+    { value: "month", label: "This month" },
+    { value: "year", label: "This year" },
+    { value: "custom", label: "Custom" },
+];
+
 interface DashboardCard {
     name: string;
     description: string;
@@ -84,15 +99,113 @@ function ChartCard({
 }) {
     return (
         <div className="rounded-lg border border-[var(--color-ink)]/10 bg-white p-5">
-            <p className="font-[family-name:var(--font-display)] text-sm font-semibold text-[var(--color-ink)]">
-                {title}
-            </p>
-            <p className="mt-0.5 text-xs text-[var(--color-ink)]/50">
-                {subtitle}
-            </p>
+            <div>
+                <p className="font-[family-name:var(--font-display)] text-sm font-semibold text-[var(--color-ink)]">
+                    {title}
+                </p>
+                <p className="mt-0.5 text-xs text-[var(--color-ink)]/50">
+                    {subtitle}
+                </p>
+            </div>
+
             <div className="mt-4 h-56">{children}</div>
         </div>
     );
+}
+
+function DateFilter({
+    value,
+    onChange,
+    customFrom,
+    customTo,
+    onCustomFromChange,
+    onCustomToChange,
+}: {
+    value: DateRangePreset;
+    onChange: (value: DateRangePreset) => void;
+    customFrom: string;
+    customTo: string;
+    onCustomFromChange: (value: string) => void;
+    onCustomToChange: (value: string) => void;
+}) {
+    return (
+        <div className="flex flex-col gap-1.5 sm:flex-row sm:flex-wrap sm:items-center">
+            <select
+                value={value}
+                onChange={(event) =>
+                    onChange(event.target.value as DateRangePreset)
+                }
+                className="w-full rounded-md border border-[var(--color-ink)]/15 bg-white px-2 py-1.5 text-xs text-[var(--color-ink)] outline-none focus:border-[var(--color-crate-light)] sm:w-auto"
+                aria-label="Chart date range"
+            >
+                {DATE_RANGE_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>
+                        {option.label}
+                    </option>
+                ))}
+            </select>
+            {value === "custom" && (
+                <div className="grid grid-cols-2 gap-1.5 sm:flex sm:items-center">
+                    <input
+                        type="date"
+                        value={customFrom}
+                        onChange={(event) =>
+                            onCustomFromChange(event.target.value)
+                        }
+                        className="w-full min-w-0 rounded-md border border-[var(--color-ink)]/15 px-2 py-1.5 text-xs text-[var(--color-ink)] outline-none focus:border-[var(--color-crate-light)]"
+                        aria-label="Chart start date"
+                    />
+                    <input
+                        type="date"
+                        value={customTo}
+                        onChange={(event) =>
+                            onCustomToChange(event.target.value)
+                        }
+                        className="w-full min-w-0 rounded-md border border-[var(--color-ink)]/15 px-2 py-1.5 text-xs text-[var(--color-ink)] outline-none focus:border-[var(--color-crate-light)]"
+                        aria-label="Chart end date"
+                    />
+                </div>
+            )}
+        </div>
+    );
+}
+
+function getDateRange(
+    preset: DateRangePreset,
+    customFrom: string,
+    customTo: string,
+): DateRange {
+    const today = new Date();
+    const to = new Date(today);
+    to.setHours(23, 59, 59, 999);
+
+    if (preset === "custom") {
+        const from = customFrom ? new Date(`${customFrom}T00:00:00`) : today;
+        const customEnd = customTo ? new Date(`${customTo}T23:59:59.999`) : to;
+        return { from, to: customEnd >= from ? customEnd : from };
+    }
+
+    const from = new Date(today);
+    if (preset === "today") {
+        from.setHours(0, 0, 0, 0);
+    } else if (preset === "week") {
+        from.setHours(0, 0, 0, 0);
+        from.setDate(from.getDate() - ((from.getDay() + 6) % 7));
+    } else if (preset === "month") {
+        from.setHours(0, 0, 0, 0);
+        from.setDate(1);
+    } else {
+        from.setHours(0, 0, 0, 0);
+        from.setMonth(0, 1);
+    }
+
+    return { from, to };
+}
+
+function isInDateRange(value: string | undefined, range: DateRange): boolean {
+    if (!value) return false;
+    const date = new Date(value);
+    return date >= range.from && date <= range.to;
 }
 
 export default function ManagerDashboardPage() {
@@ -100,6 +213,10 @@ export default function ManagerDashboardPage() {
     const [orders, setOrders] = useState<Order[] | null>(null);
     const [products, setProducts] = useState<Product[] | null>(null);
     const [chartsError, setChartsError] = useState<string | null>(null);
+    // One shared filter applies to all three charts below.
+    const [dateRange, setDateRange] = useState<DateRangePreset>("today");
+    const [customFrom, setCustomFrom] = useState("");
+    const [customTo, setCustomTo] = useState("");
 
     useEffect(() => {
         Promise.all([
@@ -113,10 +230,18 @@ export default function ManagerDashboardPage() {
             .catch(() => setChartsError("Couldn't load dashboard charts."));
     }, []);
 
+    const range = getDateRange(dateRange, customFrom, customTo);
+    const ordersInRange = orders?.filter((order) =>
+        isInDateRange(order.createdAt, range),
+    );
+    const productsForStock = products?.filter((product) =>
+        isInDateRange(product.createdAt, range),
+    );
+
     const orderStatusData = ORDER_STATUSES.map((status) => ({
         status,
         label: STATUS_LABELS[status],
-        count: orders?.filter((o) => o.status === status).length ?? 0,
+        count: ordersInRange?.filter((o) => o.status === status).length ?? 0,
         color: STATUS_COLORS[status],
     }));
 
@@ -124,26 +249,28 @@ export default function ManagerDashboardPage() {
         status,
         label,
         count:
-            orders?.filter((o) => o.driver && o.status === status).length ?? 0,
+            ordersInRange?.filter((o) => o.driver && o.status === status)
+                .length ?? 0,
         color: STATUS_COLORS[status],
     }));
 
-    const stockData = products
+    const stockData = productsForStock
         ? [
               {
                   label: "Out of stock",
-                  count: products.filter((p) => p.stock === 0).length,
+                  count: productsForStock.filter((p) => p.stock === 0).length,
                   color: STOCK_COLORS.out,
               },
               {
                   label: "Low stock",
-                  count: products.filter((p) => p.stock > 0 && p.stock <= 5)
-                      .length,
+                  count: productsForStock.filter(
+                      (p) => p.stock > 0 && p.stock <= 5,
+                  ).length,
                   color: STOCK_COLORS.low,
               },
               {
                   label: "In stock",
-                  count: products.filter((p) => p.stock > 5).length,
+                  count: productsForStock.filter((p) => p.stock > 5).length,
                   color: STOCK_COLORS.healthy,
               },
           ]
@@ -219,126 +346,151 @@ export default function ManagerDashboardPage() {
             )}
 
             {!chartsError && (
-                <div className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-3">
-                    <ChartCard
-                        title="Orders by status"
-                        subtitle="All orders, current status"
-                    >
-                        {chartsLoading ? (
-                            <ChartSkeleton />
-                        ) : (
-                            <ResponsiveContainer width="100%" height="100%">
-                                <BarChart data={orderStatusData}>
-                                    <CartesianGrid
-                                        strokeDasharray="3 3"
-                                        vertical={false}
-                                        stroke="#00000010"
-                                    />
-                                    <XAxis
-                                        dataKey="label"
-                                        tick={{ fontSize: 11 }}
-                                        interval={0}
-                                        angle={-20}
-                                        textAnchor="end"
-                                        height={50}
-                                    />
-                                    <YAxis
-                                        allowDecimals={false}
-                                        tick={{ fontSize: 11 }}
-                                        width={28}
-                                    />
-                                    <Tooltip />
-                                    <Bar dataKey="count" radius={[4, 4, 0, 0]}>
-                                        {orderStatusData.map((d) => (
-                                            <Cell
-                                                key={d.status}
-                                                fill={d.color}
-                                            />
-                                        ))}
-                                    </Bar>
-                                </BarChart>
-                            </ResponsiveContainer>
-                        )}
-                    </ChartCard>
+                <>
+                    <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
+                        <p className="text-xs text-[var(--color-ink)]/50">
+                            Showing data for the selected period
+                        </p>
+                        <DateFilter
+                            value={dateRange}
+                            onChange={setDateRange}
+                            customFrom={customFrom}
+                            customTo={customTo}
+                            onCustomFromChange={setCustomFrom}
+                            onCustomToChange={setCustomTo}
+                        />
+                    </div>
 
-                    <ChartCard
-                        title="Product stock"
-                        subtitle="Out of stock, low (≤5), and healthy"
-                    >
-                        {chartsLoading ? (
-                            <ChartSkeleton />
-                        ) : (
-                            <ResponsiveContainer width="100%" height="100%">
-                                <BarChart data={stockData}>
-                                    <CartesianGrid
-                                        strokeDasharray="3 3"
-                                        vertical={false}
-                                        stroke="#00000010"
-                                    />
-                                    <XAxis
-                                        dataKey="label"
-                                        tick={{ fontSize: 11 }}
-                                    />
-                                    <YAxis
-                                        allowDecimals={false}
-                                        tick={{ fontSize: 11 }}
-                                        width={28}
-                                    />
-                                    <Tooltip />
-                                    <Bar dataKey="count" radius={[4, 4, 0, 0]}>
-                                        {stockData.map((d) => (
-                                            <Cell
-                                                key={d.label}
-                                                fill={d.color}
-                                            />
-                                        ))}
-                                    </Bar>
-                                </BarChart>
-                            </ResponsiveContainer>
-                        )}
-                    </ChartCard>
+                    <div className="mt-3 grid grid-cols-1 gap-4 lg:grid-cols-3">
+                        <ChartCard
+                            title="Orders by status"
+                            subtitle="All orders, current status"
+                        >
+                            {chartsLoading ? (
+                                <ChartSkeleton />
+                            ) : (
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <BarChart data={orderStatusData}>
+                                        <CartesianGrid
+                                            strokeDasharray="3 3"
+                                            vertical={false}
+                                            stroke="#00000010"
+                                        />
+                                        <XAxis
+                                            dataKey="label"
+                                            tick={{ fontSize: 11 }}
+                                            interval={0}
+                                            angle={-20}
+                                            textAnchor="end"
+                                            height={50}
+                                        />
+                                        <YAxis
+                                            allowDecimals={false}
+                                            tick={{ fontSize: 11 }}
+                                            width={28}
+                                        />
+                                        <Tooltip />
+                                        <Bar
+                                            dataKey="count"
+                                            radius={[4, 4, 0, 0]}
+                                        >
+                                            {orderStatusData.map((d) => (
+                                                <Cell
+                                                    key={d.status}
+                                                    fill={d.color}
+                                                />
+                                            ))}
+                                        </Bar>
+                                    </BarChart>
+                                </ResponsiveContainer>
+                            )}
+                        </ChartCard>
 
-                    <ChartCard
-                        title="Deliveries in progress"
-                        subtitle="Orders with a driver assigned"
-                    >
-                        {chartsLoading ? (
-                            <ChartSkeleton />
-                        ) : (
-                            <ResponsiveContainer width="100%" height="100%">
-                                <BarChart data={deliveryStatusData}>
-                                    <CartesianGrid
-                                        strokeDasharray="3 3"
-                                        vertical={false}
-                                        stroke="#00000010"
-                                    />
-                                    <XAxis
-                                        dataKey="label"
-                                        tick={{ fontSize: 11 }}
-                                        interval={0}
-                                        angle={-20}
-                                        textAnchor="end"
-                                        height={50}
-                                    />
-                                    <YAxis
-                                        allowDecimals={false}
-                                        tick={{ fontSize: 11 }}
-                                        width={28}
-                                    />
-                                    <Tooltip />
-                                    <Bar dataKey="count" radius={[4, 4, 0, 0]}>
-                                        {deliveryStatusData.map((d) => (
-                                            <Cell
-                                                key={d.status}
-                                                fill={d.color}
-                                            />
-                                        ))}
-                                    </Bar>
-                                </BarChart>
-                            </ResponsiveContainer>
-                        )}
-                    </ChartCard>
-                </div>
+                        <ChartCard
+                            title="Product stock"
+                            subtitle="Products added in the selected period"
+                        >
+                            {chartsLoading ? (
+                                <ChartSkeleton />
+                            ) : (
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <BarChart data={stockData}>
+                                        <CartesianGrid
+                                            strokeDasharray="3 3"
+                                            vertical={false}
+                                            stroke="#00000010"
+                                        />
+                                        <XAxis
+                                            dataKey="label"
+                                            tick={{ fontSize: 11 }}
+                                        />
+                                        <YAxis
+                                            allowDecimals={false}
+                                            tick={{ fontSize: 11 }}
+                                            width={28}
+                                        />
+                                        <Tooltip />
+                                        <Bar
+                                            dataKey="count"
+                                            radius={[4, 4, 0, 0]}
+                                        >
+                                            {stockData.map((d) => (
+                                                <Cell
+                                                    key={d.label}
+                                                    fill={d.color}
+                                                />
+                                            ))}
+                                        </Bar>
+                                    </BarChart>
+                                </ResponsiveContainer>
+                            )}
+                        </ChartCard>
+
+                        <ChartCard
+                            title="Deliveries in progress"
+                            subtitle="Orders with a driver assigned"
+                        >
+                            {chartsLoading ? (
+                                <ChartSkeleton />
+                            ) : (
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <BarChart data={deliveryStatusData}>
+                                        <CartesianGrid
+                                            strokeDasharray="3 3"
+                                            vertical={false}
+                                            stroke="#00000010"
+                                        />
+                                        <XAxis
+                                            dataKey="label"
+                                            tick={{ fontSize: 11 }}
+                                            interval={0}
+                                            angle={-20}
+                                            textAnchor="end"
+                                            height={50}
+                                        />
+                                        <YAxis
+                                            allowDecimals={false}
+                                            tick={{ fontSize: 11 }}
+                                            width={28}
+                                        />
+                                        <Tooltip />
+                                        <Bar
+                                            dataKey="count"
+                                            radius={[4, 4, 0, 0]}
+                                        >
+                                            {deliveryStatusData.map((d) => (
+                                                <Cell
+                                                    key={d.status}
+                                                    fill={d.color}
+                                                />
+                                            ))}
+                                        </Bar>
+                                    </BarChart>
+                                </ResponsiveContainer>
+                            )}
+                        </ChartCard>
+                    </div>
+                </>
             )}
         </div>
     );

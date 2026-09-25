@@ -5,6 +5,7 @@ export type Product = {
     price: number;
     stock: number;
     imageUrl?: string;
+    createdAt?: string;
     category?: { _id?: string; name?: string } | null;
     [key: string]: any;
 };
