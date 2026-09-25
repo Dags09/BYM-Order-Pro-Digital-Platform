@@ -65,7 +65,7 @@ export default function Products() {
                                 key={product._id}
                                 type="button"
                                 onClick={goToShop}
-                                className="group cursor-pointer rounded-lg border-2 border-ink bg-white text-left shadow-[3px_3px_0_0_theme(colors.ink)] transition hover:-translate-y-1 hover:shadow-[6px_6px_0_0_var(colors.crate)]"
+                                className="group cursor-pointer rounded-lg border-2 border-ink bg-white text-left shadow-[3px_3px_0_0_theme(colors.ink)] transition hover:-translate-y-1 hover:shadow-[6px_6px_0_0_var(--color-crate)]"
                             >
                                 <div className="relative flex h-44 items-center justify-center overflow-hidden border-b-2 border-ink bg-kraft-dark/60">
                                     {product.stock > 0 ? (

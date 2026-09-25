@@ -17,6 +17,7 @@ import { formatShortDate } from "../../utils/formatters";
 const PAGE_SIZE = 9;
 
 const emptyForm = { name: "", description: "" };
+type SortOption = "name-asc" | "name-desc" | "latest" | "oldest";
 
 function getErrorMessage(err: unknown, fallback: string) {
     const message = (err as { response?: { data?: { message?: string } } })
@@ -33,6 +34,7 @@ export default function ManagerCategoriesPage() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [search, setSearch] = useState("");
+    const [sortOption, setSortOption] = useState<SortOption>("name-asc");
     const [currentPage, setCurrentPage] = useState(1);
 
     // Create / edit modal
@@ -65,19 +67,29 @@ export default function ManagerCategoriesPage() {
             : true,
     );
 
-    const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+    const sorted = [...filtered].sort((a, b) => {
+        if (sortOption === "name-asc" || sortOption === "name-desc") {
+            const comparison = a.name.localeCompare(b.name);
+            return sortOption === "name-asc" ? comparison : -comparison;
+        }
+
+        const aTime = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const bTime = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        return sortOption === "latest" ? bTime - aTime : aTime - bTime;
+    });
+
+    const totalPages = Math.max(1, Math.ceil(sorted.length / PAGE_SIZE));
     const safePage = Math.min(currentPage, totalPages);
-    const paginated = filtered.slice(
+    const paginated = sorted.slice(
         (safePage - 1) * PAGE_SIZE,
         safePage * PAGE_SIZE,
     );
-    const rangeStart =
-        filtered.length === 0 ? 0 : (safePage - 1) * PAGE_SIZE + 1;
-    const rangeEnd = Math.min(safePage * PAGE_SIZE, filtered.length);
+    const rangeStart = sorted.length === 0 ? 0 : (safePage - 1) * PAGE_SIZE + 1;
+    const rangeEnd = Math.min(safePage * PAGE_SIZE, sorted.length);
 
     useEffect(() => {
         setCurrentPage(1);
-    }, [search]);
+    }, [search, sortOption]);
 
     const openCreateForm = () => {
         setEditingId(null);
@@ -173,17 +185,32 @@ export default function ManagerCategoriesPage() {
                 </div>
             )}
 
-            <div className="relative">
-                <Search
-                    className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink/30"
-                    strokeWidth={1.75}
-                />
-                <input
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                    placeholder="Search categories"
-                    className="w-full rounded-md border-2 border-ink/20 bg-kraft/40 py-2 pl-9 pr-3 text-sm text-ink outline-none transition focus:border-crate sm:w-72"
-                />
+            <div className="flex flex-col gap-3 sm:flex-row">
+                <div className="relative">
+                    <Search
+                        className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink/30"
+                        strokeWidth={1.75}
+                    />
+                    <input
+                        value={search}
+                        onChange={(e) => setSearch(e.target.value)}
+                        placeholder="Search categories"
+                        className="w-full rounded-md border-2 border-ink/20 bg-kraft/40 py-2 pl-9 pr-3 text-sm text-ink outline-none transition focus:border-crate sm:w-72"
+                    />
+                </div>
+                <select
+                    value={sortOption}
+                    onChange={(e) =>
+                        setSortOption(e.target.value as SortOption)
+                    }
+                    aria-label="Sort categories"
+                    className="rounded-md border-2 border-ink/20 bg-kraft/40 px-3 py-2 text-sm text-ink outline-none transition focus:border-crate"
+                >
+                    <option value="name-asc">Name: A-Z</option>
+                    <option value="name-desc">Name: Z-A</option>
+                    <option value="latest">Date: Latest</option>
+                    <option value="oldest">Date: Oldest</option>
+                </select>
             </div>
 
             {filtered.length === 0 ? (

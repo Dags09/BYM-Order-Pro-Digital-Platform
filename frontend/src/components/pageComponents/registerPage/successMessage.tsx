@@ -7,7 +7,7 @@ interface SuccessMessageProps {
 export default function SuccessMessage({ email }: SuccessMessageProps) {
     return (
         <main className="flex min-h-screen items-center justify-center bg-kraft px-4 py-12">
-            <div className="w-full max-w-sm rounded-lg border-2 border-ink bg-white p-7 text-center shadow-[5px_5px_0_0_var(colors.crate)]">
+            <div className="w-full max-w-sm rounded-lg border-2 border-ink bg-white p-7 text-center shadow-[5px_5px_0_0_var(--color-crate)]">
                 <p className="font-mono text-xs uppercase tracking-[0.2em] text-crate">
                     Almost there
                 </p>

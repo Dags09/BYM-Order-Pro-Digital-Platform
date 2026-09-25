@@ -28,10 +28,12 @@ const generateTokens = (userId) => {
 };
 
 const authCookieOptions = () => {
-    const isProduction = process.env.NODE_ENV === "production";
+    const isProduction =
+        process.env.NODE_ENV === "production" ||
+        ENV.FRONTEND_URL?.startsWith("https://");
     return {
         secure: isProduction,
-        sameSite: isProduction ? "strict" : "lax",
+        sameSite: isProduction ? "none" : "lax",
     };
 };
 

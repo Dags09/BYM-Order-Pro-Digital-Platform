@@ -76,7 +76,7 @@ export default function Login() {
                     BYM
                 </Link>
 
-                <div className="rounded-lg border-2 border-ink bg-white p-7 shadow-[5px_5px_0_0_var(colors.crate)]">
+                <div className="rounded-lg border-2 border-ink bg-white p-7 shadow-[5px_5px_0_0_var(--color-crate)]">
                     <p className="font-mono text-xs uppercase tracking-[0.2em] text-crate">
                         Retailer log in
                     </p>

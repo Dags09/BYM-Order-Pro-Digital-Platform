@@ -86,7 +86,7 @@ export default function About() {
                                             )}
                                         </div>
 
-                                        <div className="rounded-lg border-2 border-ink bg-kraft p-5 pb-6 shadow-[4px_4px_0_0_var(colors.crate)]">
+                                        <div className="rounded-lg border-2 border-ink bg-kraft p-5 pb-6 shadow-[4px_4px_0_0_var(--color-crate)]">
                                             <div className="flex items-center gap-2">
                                                 <span className="font-mono text-xs text-ink/40">
                                                     STEP {i + 1}
