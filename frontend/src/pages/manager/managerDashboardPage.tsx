@@ -17,7 +17,7 @@ import type { Order, OrderStatus } from "../../types/order";
 import type { Product } from "../../types/product";
 import { STATUS_COLORS, STATUS_LABELS } from "../../utils/constant";
 
-type DateRangePreset = "today" | "week" | "month" | "year" | "custom";
+type DateRangePreset = "all" | "today" | "week" | "month" | "year" | "custom";
 
 interface DateRange {
     from: Date;
@@ -25,6 +25,7 @@ interface DateRange {
 }
 
 const DATE_RANGE_OPTIONS: { value: DateRangePreset; label: string }[] = [
+    { value: "all", label: "All time" },
     { value: "today", label: "Today" },
     { value: "week", label: "This week" },
     { value: "month", label: "This month" },
@@ -87,6 +88,10 @@ const STOCK_COLORS = {
     low: "#f0b429",
     healthy: "#3f8563",
 };
+
+// Used as the lower bound for "All time" so every record passes the
+// isInDateRange check regardless of how old it is.
+const EPOCH = new Date(0);
 
 function ChartCard({
     title,
@@ -178,6 +183,10 @@ function getDateRange(
     const today = new Date();
     const to = new Date(today);
     to.setHours(23, 59, 59, 999);
+
+    if (preset === "all") {
+        return { from: EPOCH, to };
+    }
 
     if (preset === "custom") {
         const from = customFrom ? new Date(`${customFrom}T00:00:00`) : today;

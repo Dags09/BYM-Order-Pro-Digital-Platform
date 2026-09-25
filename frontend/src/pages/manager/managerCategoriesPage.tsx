@@ -204,7 +204,7 @@ export default function ManagerCategoriesPage() {
                         setSortOption(e.target.value as SortOption)
                     }
                     aria-label="Sort categories"
-                    className="rounded-md bg-white px-3 py-2 text-sm text-ink outline-none transition focus:border-crate focus:border-2"
+                    className="rounded-md border-2 border-ink/20 bg-white px-3 py-2 text-sm text-ink outline-none transition focus:border-crate focus:border-2"
                 >
                     <option value="name-asc">Name: A-Z</option>
                     <option value="name-desc">Name: Z-A</option>

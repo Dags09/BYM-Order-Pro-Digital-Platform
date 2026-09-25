@@ -28,6 +28,14 @@ import { formatPrice } from "../../utils/formatters";
 const LOW_STOCK_THRESHOLD = 5;
 
 type ViewMode = "list" | "card";
+type StockFilter = "all" | "out" | "low" | "instock";
+
+const STOCK_FILTER_OPTIONS: { value: StockFilter; label: string }[] = [
+    { value: "all", label: "All stock levels" },
+    { value: "out", label: "Out of stock" },
+    { value: "low", label: "Low stock" },
+    { value: "instock", label: "In stock" },
+];
 
 const CARD_GRID_CLASS =
     "grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4";
@@ -88,7 +96,7 @@ function CategoryDropdown({
             <button
                 type="button"
                 onClick={() => setOpen((o) => !o)}
-                className="flex w-full items-center justify-between gap-2 rounded-md border-2 border-ink/20 bg-kraft/40 px-3 py-2 text-sm text-ink outline-none transition focus:border-crate"
+                className="flex w-full items-center justify-between gap-2 rounded-md border-2 border-ink/20 bg-white px-3 py-2 text-sm text-ink outline-none transition focus:border-crate"
             >
                 <span className={value ? "" : "text-ink/40"}>
                     {selectedLabel}
@@ -153,6 +161,7 @@ export default function ManagerProductsPage() {
 
     const [search, setSearch] = useState("");
     const [categoryFilter, setCategoryFilter] = useState("all");
+    const [stockFilter, setStockFilter] = useState<StockFilter>("all");
     const [viewMode, setViewMode] = useState<ViewMode>("card");
     const [currentPage, setCurrentPage] = useState(1);
 
@@ -203,7 +212,14 @@ export default function ManagerProductsPage() {
             (typeof p.category === "object"
                 ? p.category?._id === categoryFilter
                 : p.category === categoryFilter);
-        return matchesSearch && matchesCategory;
+        const matchesStock =
+            stockFilter === "all" ||
+            (stockFilter === "out" && p.stock === 0) ||
+            (stockFilter === "low" &&
+                p.stock > 0 &&
+                p.stock <= LOW_STOCK_THRESHOLD) ||
+            (stockFilter === "instock" && p.stock > LOW_STOCK_THRESHOLD);
+        return matchesSearch && matchesCategory && matchesStock;
     });
 
     const pageSize = viewMode === "list" ? LIST_PAGE_SIZE : CARD_PAGE_SIZE;
@@ -220,7 +236,7 @@ export default function ManagerProductsPage() {
     // Reset to page 1 whenever the result set or the page size changes.
     useEffect(() => {
         setCurrentPage(1);
-    }, [search, categoryFilter, viewMode]);
+    }, [search, categoryFilter, stockFilter, viewMode]);
 
     // ---- Create / edit form ----
 
@@ -400,6 +416,22 @@ export default function ManagerProductsPage() {
                             placeholder="All categories"
                             includeAllOption
                         />
+                    </div>
+                    <div className="sm:w-44">
+                        <select
+                            value={stockFilter}
+                            onChange={(e) =>
+                                setStockFilter(e.target.value as StockFilter)
+                            }
+                            className="w-full rounded-md border-2 border-ink/20 bg-white px-3 py-2 text-sm text-ink outline-none transition focus:border-crate"
+                            aria-label="Filter by stock level"
+                        >
+                            {STOCK_FILTER_OPTIONS.map((opt) => (
+                                <option key={opt.value} value={opt.value}>
+                                    {opt.label}
+                                </option>
+                            ))}
+                        </select>
                     </div>
                 </div>
 
