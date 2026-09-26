@@ -27,6 +27,7 @@ import ManagerOrderDetailPage from "./pages/manager/managerOrderDetailPage";
 import ManagerProductsPage from "./pages/manager/managerProductsPage";
 import ManagerCategoriesPage from "./pages/manager/managerCategoriesPage";
 import ManagerDriversPage from "./pages/manager/managerDriversPage";
+import ManagerDriverDetailPage from "./pages/manager/managerDriverDetailPage";
 
 import AccountSettings from "./pages/employAccountSettingsPage";
 
@@ -116,6 +117,10 @@ function App() {
                         element={<ManagerCategoriesPage />}
                     />
                     <Route path="drivers" element={<ManagerDriversPage />} />
+                    <Route
+                        path="drivers/:id"
+                        element={<ManagerDriverDetailPage />}
+                    />
                     <Route path="settings" element={<AccountSettings />} />
                 </Route>
 

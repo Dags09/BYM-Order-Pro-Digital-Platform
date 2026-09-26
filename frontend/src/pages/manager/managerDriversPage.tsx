@@ -1,5 +1,13 @@
 import { useEffect, useState, useCallback } from "react";
-import { Search, Truck, Mail, Phone, PackageCheck } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import {
+    Search,
+    Truck,
+    Mail,
+    Phone,
+    PackageCheck,
+    ChevronRight,
+} from "lucide-react";
 import api from "../../lib/axios";
 import { formatShortDate } from "../../utils/formatters";
 
@@ -22,6 +30,7 @@ function getErrorMessage(err: unknown, fallback: string) {
 }
 
 export default function ManagerDriversPage() {
+    const navigate = useNavigate();
     const [drivers, setDrivers] = useState<Driver[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -105,9 +114,12 @@ export default function ManagerDriversPage() {
             ) : (
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
                     {filtered.map((driver) => (
-                        <div
+                        <button
                             key={driver._id}
-                            className="rounded-lg border border-ink/10 bg-white p-4 shadow-sm"
+                            onClick={() =>
+                                navigate(`/manager/drivers/${driver._id}`)
+                            }
+                            className="rounded-lg border border-ink/10 bg-white p-4 text-left shadow-sm transition-all hover:-translate-y-0.5 hover:border-crate/30 hover:shadow-md"
                         >
                             <div className="flex items-start justify-between gap-2">
                                 <div>
@@ -143,42 +155,40 @@ export default function ManagerDriversPage() {
                             )}
 
                             <div className="mt-3 space-y-1.5 text-sm text-ink/60">
-                                <a
-                                    href={`mailto:${driver.email}`}
-                                    className="flex items-center gap-2 truncate hover:underline"
-                                >
+                                <span className="flex items-center gap-2 truncate">
                                     <Mail
                                         className="h-3.5 w-3.5 shrink-0 text-ink/40"
                                         strokeWidth={1.75}
                                     />
                                     {driver.email}
-                                </a>
+                                </span>
                                 {driver.phoneNumber && (
-                                    <a
-                                        href={`tel:${driver.phoneNumber}`}
-                                        className="flex items-center gap-2 hover:underline"
-                                    >
+                                    <span className="flex items-center gap-2">
                                         <Phone
                                             className="h-3.5 w-3.5 shrink-0 text-ink/40"
                                             strokeWidth={1.75}
                                         />
                                         {driver.phoneNumber}
-                                    </a>
+                                    </span>
                                 )}
                             </div>
 
-                            <div className="mt-3 flex items-center gap-2 border-t border-ink/10 pt-3">
-                                <PackageCheck
-                                    className="h-4 w-4 text-ink/40"
-                                    strokeWidth={1.75}
-                                />
-                                <span className="text-sm text-ink/70">
+                            <div className="mt-3 flex items-center justify-between gap-2 border-t border-ink/10 pt-3">
+                                <span className="flex items-center gap-2 text-sm text-ink/70">
+                                    <PackageCheck
+                                        className="h-4 w-4 text-ink/40"
+                                        strokeWidth={1.75}
+                                    />
                                     {driver.activeDeliveries === 0
                                         ? "No active deliveries"
                                         : `${driver.activeDeliveries} active ${driver.activeDeliveries === 1 ? "delivery" : "deliveries"}`}
                                 </span>
+                                <ChevronRight
+                                    className="h-4 w-4 shrink-0 text-ink/30"
+                                    strokeWidth={1.75}
+                                />
                             </div>
-                        </div>
+                        </button>
                     ))}
                 </div>
             )}

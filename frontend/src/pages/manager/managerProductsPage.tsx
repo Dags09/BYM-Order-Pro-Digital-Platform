@@ -28,14 +28,6 @@ import { formatPrice } from "../../utils/formatters";
 const LOW_STOCK_THRESHOLD = 5;
 
 type ViewMode = "list" | "card";
-type StockFilter = "all" | "out" | "low" | "instock";
-
-const STOCK_FILTER_OPTIONS: { value: StockFilter; label: string }[] = [
-    { value: "all", label: "All stock levels" },
-    { value: "out", label: "Out of stock" },
-    { value: "low", label: "Low stock" },
-    { value: "instock", label: "In stock" },
-];
 
 const CARD_GRID_CLASS =
     "grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4";
@@ -115,7 +107,7 @@ function CategoryDropdown({
                                 onChange("all");
                                 setOpen(false);
                             }}
-                            className={`block w-full px-3 py-2 text-left text-sm transition-colors hover:bg-white ${
+                            className={`block w-full px-3 py-2 text-left text-sm transition-colors hover:bg-kraft/50 ${
                                 value === "all"
                                     ? "bg-crate/10 font-medium text-crate"
                                     : "text-ink"
@@ -161,7 +153,6 @@ export default function ManagerProductsPage() {
 
     const [search, setSearch] = useState("");
     const [categoryFilter, setCategoryFilter] = useState("all");
-    const [stockFilter, setStockFilter] = useState<StockFilter>("all");
     const [viewMode, setViewMode] = useState<ViewMode>("card");
     const [currentPage, setCurrentPage] = useState(1);
 
@@ -212,14 +203,7 @@ export default function ManagerProductsPage() {
             (typeof p.category === "object"
                 ? p.category?._id === categoryFilter
                 : p.category === categoryFilter);
-        const matchesStock =
-            stockFilter === "all" ||
-            (stockFilter === "out" && p.stock === 0) ||
-            (stockFilter === "low" &&
-                p.stock > 0 &&
-                p.stock <= LOW_STOCK_THRESHOLD) ||
-            (stockFilter === "instock" && p.stock > LOW_STOCK_THRESHOLD);
-        return matchesSearch && matchesCategory && matchesStock;
+        return matchesSearch && matchesCategory;
     });
 
     const pageSize = viewMode === "list" ? LIST_PAGE_SIZE : CARD_PAGE_SIZE;
@@ -236,7 +220,7 @@ export default function ManagerProductsPage() {
     // Reset to page 1 whenever the result set or the page size changes.
     useEffect(() => {
         setCurrentPage(1);
-    }, [search, categoryFilter, stockFilter, viewMode]);
+    }, [search, categoryFilter, viewMode]);
 
     // ---- Create / edit form ----
 
@@ -417,22 +401,6 @@ export default function ManagerProductsPage() {
                             includeAllOption
                         />
                     </div>
-                    <div className="sm:w-44">
-                        <select
-                            value={stockFilter}
-                            onChange={(e) =>
-                                setStockFilter(e.target.value as StockFilter)
-                            }
-                            className="w-full rounded-md border-2 border-ink/20 bg-white px-3 py-2 text-sm text-ink outline-none transition focus:border-crate"
-                            aria-label="Filter by stock level"
-                        >
-                            {STOCK_FILTER_OPTIONS.map((opt) => (
-                                <option key={opt.value} value={opt.value}>
-                                    {opt.label}
-                                </option>
-                            ))}
-                        </select>
-                    </div>
                 </div>
 
                 {/* View switcher */}
@@ -486,7 +454,7 @@ export default function ManagerProductsPage() {
                         return (
                             <div
                                 key={product._id}
-                                className="flex items-center gap-4 rounded-lg border border-ink/10 bg-white p-3 shadow-sm"
+                                className="flex items-center gap-4 rounded-lg border border-ink/10 bg-white p-3 shadow-sm transition-colors hover:border-crate/30 hover:bg-kraft/20"
                             >
                                 <div className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-md bg-kraft/40">
                                     {product.imageUrl ? (
@@ -579,7 +547,7 @@ export default function ManagerProductsPage() {
                         return (
                             <div
                                 key={product._id}
-                                className="flex flex-col overflow-hidden rounded-lg border border-ink/10 bg-white shadow-sm"
+                                className="flex flex-col overflow-hidden rounded-lg border border-ink/10 bg-white shadow-sm transition-all hover:-translate-y-0.5 hover:border-crate/30 hover:shadow-md"
                             >
                                 <div className="flex h-36 items-center justify-center bg-kraft/40">
                                     {product.imageUrl ? (
