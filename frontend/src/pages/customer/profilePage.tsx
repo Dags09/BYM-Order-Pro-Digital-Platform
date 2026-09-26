@@ -49,7 +49,7 @@ export default function ProfilePage() {
     }, [isAuthenticated, setUser]);
 
     if (!isAuthenticated) {
-        return <Navigate to="/Login" replace />;
+        return <Navigate to="/login" replace />;
     }
 
     const initials = user

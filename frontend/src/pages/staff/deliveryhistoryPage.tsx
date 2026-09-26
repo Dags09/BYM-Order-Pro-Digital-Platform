@@ -1,96 +1,65 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import {
-    CheckCircle2,
-    ChevronRight,
-    PackageSearch,
-    CalendarRange,
-    X,
-} from "lucide-react";
+import { History, ChevronRight, Search, Package } from "lucide-react";
 import api from "../../lib/axios";
-import type { Order } from "../../types/order";
-import { formatPrice, formatDateTime } from "../../utils/formatters";
+import type { Order, OrderStatus } from "../../types/order";
+import { formatDateTime, formatPrice } from "../../utils/formatters";
+import { STATUS_COLORS, STATUS_LABELS } from "../../utils/constant";
 
-function toDateInputValue(d: Date) {
-    return d.toISOString().slice(0, 10);
+type FilterTab = "all" | Extract<OrderStatus, "delivered" | "cancelled">;
+
+const TABS: FilterTab[] = ["all", "delivered", "cancelled"];
+
+// Once an order leaves these two statuses it's done — this is what
+// separates "history" from the active list on the deliveries page.
+const HISTORY_STATUSES = ["delivered", "cancelled"];
+
+function getErrorMessage(err: unknown, fallback: string) {
+    const message = (err as { response?: { data?: { message?: string } } })
+        .response?.data?.message;
+    return message ?? fallback;
 }
-
-function startOfDay(dateStr: string) {
-    const d = new Date(dateStr);
-    d.setHours(0, 0, 0, 0);
-    return d;
-}
-
-function endOfDay(dateStr: string) {
-    const d = new Date(dateStr);
-    d.setHours(23, 59, 59, 999);
-    return d;
-}
-
-type Preset = "today" | "week" | "month" | "all" | "custom";
 
 export default function DeliveryHistoryPage() {
     const navigate = useNavigate();
     const [orders, setOrders] = useState<Order[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-    const [preset, setPreset] = useState<Preset>("all");
-    const [fromDate, setFromDate] = useState("");
-    const [toDate, setToDate] = useState("");
+    const [tab, setTab] = useState<FilterTab>("all");
+    const [search, setSearch] = useState("");
 
     useEffect(() => {
-        api.get("/order/my-deliveries")
+        api.get("/driver/my-deliveries")
             .then(({ data }) => setOrders(data))
-            .catch(() => setError("Couldn't load your delivery history."))
+            .catch((err) =>
+                setError(getErrorMessage(err, "Couldn't load your history.")),
+            )
             .finally(() => setLoading(false));
     }, []);
 
-    const applyPreset = (p: Preset) => {
-        setPreset(p);
-        const now = new Date();
-        if (p === "today") {
-            const today = toDateInputValue(now);
-            setFromDate(today);
-            setToDate(today);
-        } else if (p === "week") {
-            const start = new Date(now);
-            start.setDate(now.getDate() - 6);
-            setFromDate(toDateInputValue(start));
-            setToDate(toDateInputValue(now));
-        } else if (p === "month") {
-            const start = new Date(now.getFullYear(), now.getMonth(), 1);
-            setFromDate(toDateInputValue(start));
-            setToDate(toDateInputValue(now));
-        } else if (p === "all") {
-            setFromDate("");
-            setToDate("");
-        } else if (p === "custom") {
-            setFromDate("");
-            setToDate("");
-        }
-    };
+    const history = orders
+        .filter((o) => HISTORY_STATUSES.includes(o.status))
+        .sort(
+            (a, b) =>
+                new Date(b.updatedAt).getTime() -
+                new Date(a.updatedAt).getTime(),
+        );
 
-    const completed = useMemo(
-        () =>
-            orders
-                .filter((o) => o.status === "delivered")
-                .filter((o) => {
-                    if (!fromDate && !toDate) return true;
-                    const deliveredAt = new Date(o.updatedAt);
-                    if (fromDate && deliveredAt < startOfDay(fromDate))
-                        return false;
-                    if (toDate && deliveredAt > endOfDay(toDate)) return false;
-                    return true;
-                })
-                .sort(
-                    (a, b) =>
-                        new Date(b.updatedAt).getTime() -
-                        new Date(a.updatedAt).getTime(),
-                ),
-        [orders, fromDate, toDate],
-    );
+    const countFor = (t: FilterTab) =>
+        t === "all"
+            ? history.length
+            : history.filter((o) => o.status === t).length;
 
-    const hasActiveFilter = !!(fromDate || toDate);
+    const filtered = history
+        .filter((o) => tab === "all" || o.status === tab)
+        .filter((o) => {
+            if (!search.trim()) return true;
+            const q = search.trim().toLowerCase();
+            const name = o.customer
+                ? `${o.customer.firstName} ${o.customer.lastName}`.toLowerCase()
+                : "";
+            return name.includes(q) || o._id.toLowerCase().includes(q);
+        });
 
     if (loading) {
         return (
@@ -100,162 +69,120 @@ export default function DeliveryHistoryPage() {
         );
     }
 
-    if (error) {
-        return (
-            <div className="rounded-lg border border-route/20 bg-route/5 p-6 text-route">
-                {error}
-            </div>
-        );
-    }
-
     return (
-        <div className="space-y-5">
+        <div className="space-y-5 pb-10">
             <div>
-                <h1 className="font-display text-2xl font-semibold tracking-tight text-ink">
+                <p className="font-display text-xl font-semibold text-ink">
                     Delivery history
-                </h1>
-                <p className="mt-1 text-sm text-ink/60">
-                    {completed.length} completed{" "}
-                    {completed.length === 1 ? "delivery" : "deliveries"}
+                </p>
+                <p className="text-sm text-ink/50">
+                    Everything you've delivered or that's been cancelled.
                 </p>
             </div>
 
-            {/* Date filter */}
-            <div className="rounded-lg border border-ink/10 bg-white p-4">
-                <div className="flex flex-wrap gap-1.5">
-                    {(
-                        [
-                            ["today", "Today"],
-                            ["week", "Last 7 days"],
-                            ["month", "This month"],
-                            ["all", "All time"],
-                            ["custom", "Custom"],
-                        ] as [Preset, string][]
-                    ).map(([key, label]) => (
-                        <button
-                            key={key}
-                            onClick={() => applyPreset(key)}
-                            className={`rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${
-                                preset === key
-                                    ? "bg-crate text-white"
-                                    : "bg-kraft text-ink/60 hover:text-ink"
-                            }`}
-                        >
-                            {label}
-                        </button>
-                    ))}
+            {error && (
+                <div className="rounded-lg border border-route/20 bg-route/5 p-4 text-sm text-route">
+                    {error}
+                </div>
+            )}
+
+            <div className="rounded-lg border border-ink/10 bg-white shadow-sm">
+                <div className="flex flex-col gap-3 border-b border-ink/10 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="flex flex-wrap gap-1 rounded-md border border-ink/10 bg-kraft/30 p-1">
+                        {TABS.map((t) => (
+                            <button
+                                key={t}
+                                onClick={() => setTab(t)}
+                                className={`rounded-[4px] px-2.5 py-1 text-xs font-medium capitalize transition-colors ${
+                                    tab === t
+                                        ? "bg-crate text-white"
+                                        : "text-ink/60 hover:text-ink"
+                                }`}
+                            >
+                                {t === "all" ? "All" : STATUS_LABELS[t]}
+                                <span
+                                    className={`ml-1 ${tab === t ? "text-white/70" : "text-ink/40"}`}
+                                >
+                                    {countFor(t)}
+                                </span>
+                            </button>
+                        ))}
+                    </div>
+                    <div className="relative">
+                        <Search
+                            className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-ink/30"
+                            strokeWidth={1.75}
+                        />
+                        <input
+                            value={search}
+                            onChange={(e) => setSearch(e.target.value)}
+                            placeholder="Search order or customer"
+                            className="w-full rounded-md border-2 border-ink/20 bg-kraft/40 py-1.5 pl-8 pr-3 text-xs text-ink outline-none transition focus:border-crate sm:w-52"
+                        />
+                    </div>
                 </div>
 
-                {preset === "custom" && (
-                    <div className="mt-3 flex flex-wrap items-end gap-3">
-                        <label className="flex flex-col gap-1">
-                            <span className="font-mono text-[10px] uppercase tracking-widest text-ink/50">
-                                From
-                            </span>
-                            <input
-                                type="date"
-                                value={fromDate}
-                                max={toDate || undefined}
-                                onChange={(e) => setFromDate(e.target.value)}
-                                className="rounded-md border-2 border-ink/20 bg-kraft/40 px-2.5 py-1.5 text-sm text-ink outline-none focus:border-crate"
-                            />
-                        </label>
-                        <label className="flex flex-col gap-1">
-                            <span className="font-mono text-[10px] uppercase tracking-widest text-ink/50">
-                                To
-                            </span>
-                            <input
-                                type="date"
-                                value={toDate}
-                                min={fromDate || undefined}
-                                onChange={(e) => setToDate(e.target.value)}
-                                className="rounded-md border-2 border-ink/20 bg-kraft/40 px-2.5 py-1.5 text-sm text-ink outline-none focus:border-crate"
-                            />
-                        </label>
-
-                        {hasActiveFilter && (
+                {history.length === 0 ? (
+                    <div className="p-10 text-center">
+                        <History
+                            className="mx-auto h-8 w-8 text-ink/20"
+                            strokeWidth={1.5}
+                        />
+                        <p className="mt-3 text-sm text-ink/50">
+                            No completed deliveries yet.
+                        </p>
+                    </div>
+                ) : filtered.length === 0 ? (
+                    <div className="p-8 text-center">
+                        <p className="text-sm text-ink/50">
+                            No deliveries match this filter.
+                        </p>
+                    </div>
+                ) : (
+                    <div className="divide-y divide-ink/5">
+                        {filtered.map((order) => (
                             <button
-                                onClick={() => applyPreset("all")}
-                                className="flex items-center gap-1 rounded-md px-2.5 py-1.5 text-xs font-medium text-ink/50 hover:text-route"
+                                key={order._id}
+                                onClick={() => navigate(`/staff/${order._id}`)}
+                                className="flex w-full items-center justify-between gap-3 px-5 py-3 text-left transition-colors hover:bg-kraft/30"
                             >
-                                <X className="h-3.5 w-3.5" />
-                                Clear
+                                <div className="min-w-0 flex-1">
+                                    <div className="flex flex-wrap items-center gap-2">
+                                        <span
+                                            className="rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white"
+                                            style={{
+                                                backgroundColor:
+                                                    STATUS_COLORS[order.status],
+                                            }}
+                                        >
+                                            {STATUS_LABELS[order.status]}
+                                        </span>
+                                        <span className="font-mono text-xs text-ink/40">
+                                            #{order._id.slice(-6).toUpperCase()}
+                                        </span>
+                                        <span className="text-xs text-ink/40">
+                                            {formatDateTime(order.updatedAt)}
+                                        </span>
+                                    </div>
+                                    <p className="mt-1 truncate text-sm text-ink/70">
+                                        {order.customer
+                                            ? `${order.customer.firstName} ${order.customer.lastName}`
+                                            : "Deleted customer"}{" "}
+                                        · {order.shippingAddress.city}
+                                    </p>
+                                </div>
+                                <div className="flex shrink-0 items-center gap-3">
+                                    <span className="flex items-center gap-1 text-sm font-medium text-ink/80">
+                                        <Package className="h-3.5 w-3.5 text-ink/40" />
+                                        {formatPrice(order.totalAmount)}
+                                    </span>
+                                    <ChevronRight className="h-4 w-4 text-ink/30" />
+                                </div>
                             </button>
-                        )}
+                        ))}
                     </div>
                 )}
             </div>
-
-            {completed.length === 0 ? (
-                <div className="rounded-lg border border-dashed border-ink/20 bg-white/50 p-10 text-center">
-                    {hasActiveFilter ? (
-                        <>
-                            <CalendarRange
-                                className="mx-auto h-8 w-8 text-ink/30"
-                                strokeWidth={1.5}
-                            />
-                            <p className="mt-3 text-sm text-ink/60">
-                                No deliveries in this date range.
-                            </p>
-                        </>
-                    ) : (
-                        <>
-                            <PackageSearch
-                                className="mx-auto h-8 w-8 text-ink/30"
-                                strokeWidth={1.5}
-                            />
-                            <p className="mt-3 text-sm text-ink/60">
-                                No completed deliveries yet.
-                            </p>
-                        </>
-                    )}
-                </div>
-            ) : (
-                <div className="space-y-3">
-                    {completed.map((order) => (
-                        <button
-                            key={order._id}
-                            onClick={() => navigate(`/staff/${order._id}`)}
-                            className="flex w-full items-center justify-between rounded-lg border border-ink/10 bg-white p-4 text-left shadow-sm transition-shadow hover:shadow-md"
-                        >
-                            <div className="min-w-0 flex-1">
-                                <div className="flex items-center gap-2">
-                                    <span className="flex items-center gap-1 rounded-full bg-crate/10 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-crate">
-                                        <CheckCircle2 className="h-3 w-3" />
-                                        Delivered
-                                    </span>
-                                    <span className="font-mono text-xs text-ink/40">
-                                        #{order._id.slice(-6).toUpperCase()}
-                                    </span>
-                                </div>
-
-                                <p className="mt-2 truncate font-medium text-ink">
-                                    {order.customer.firstName}{" "}
-                                    {order.customer.lastName}
-                                </p>
-
-                                <p className="mt-0.5 truncate text-sm text-ink/60">
-                                    {order.shippingAddress.city},{" "}
-                                    {order.shippingAddress.province}
-                                </p>
-
-                                <div className="mt-2 flex flex-wrap items-center gap-3 text-xs text-ink/50">
-                                    <span>
-                                        Delivered{" "}
-                                        {formatDateTime(order.updatedAt)}
-                                    </span>
-                                    <span>{order.items.length} item(s)</span>
-                                    <span className="font-medium text-ink/70">
-                                        {formatPrice(order.totalAmount)}
-                                    </span>
-                                </div>
-                            </div>
-
-                            <ChevronRight className="ml-2 h-5 w-5 shrink-0 text-ink/30" />
-                        </button>
-                    ))}
-                </div>
-            )}
         </div>
     );
 }

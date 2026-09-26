@@ -69,7 +69,7 @@ export default function ShopPage() {
     }, [products, selectedCategory, search]);
 
     if (!isAuthenticated) {
-        return <Navigate to="/Login" replace />;
+        return <Navigate to="/login" replace />;
     }
 
     return (

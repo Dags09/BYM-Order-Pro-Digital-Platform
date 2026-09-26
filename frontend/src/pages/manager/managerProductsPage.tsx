@@ -454,7 +454,7 @@ export default function ManagerProductsPage() {
                         return (
                             <div
                                 key={product._id}
-                                className="flex items-center gap-4 rounded-lg border border-ink/10 bg-white p-3 shadow-sm transition-colors hover:border-crate/30 hover:bg-kraft/20"
+                                className="flex items-center gap-4 rounded-lg border border-ink/10 border-l-4 border-l-transparent bg-white p-3 shadow-sm transition-colors hover:border-l-crate hover:border-ink/30 hover:shadow-md"
                             >
                                 <div className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-md bg-kraft/40">
                                     {product.imageUrl ? (

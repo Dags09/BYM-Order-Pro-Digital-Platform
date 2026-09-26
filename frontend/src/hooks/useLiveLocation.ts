@@ -35,7 +35,7 @@ export function useLiveLocation(orderId: string): UseLiveLocationResult {
                 lastSentRef.current = now;
 
                 const { latitude, longitude } = position.coords;
-                api.put(`/order/update-driver-location/${orderId}`, {
+                api.put(`/driver/update-driver-location/${orderId}`, {
                     latitude,
                     longitude,
                 })

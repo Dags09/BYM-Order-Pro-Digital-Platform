@@ -97,7 +97,12 @@ export default function StaffLayout() {
                         }`
                     }
                 >
-                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[var(--color-signal)] font-[family-name:var(--font-mono)] text-xs font-semibold text-[var(--color-ink)]">
+                    <div
+                        className="flex h-8 w-8 items-center justify-center rounded-full font-[family-name:var(--font-mono)] text-xs font-semibold text-white"
+                        style={{
+                            backgroundColor: user?.badgeColor || "#f0b429",
+                        }}
+                    >
                         {initials}
                     </div>
                     <div className="min-w-0 flex-1">

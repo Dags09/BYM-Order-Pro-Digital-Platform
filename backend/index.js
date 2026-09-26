@@ -12,6 +12,7 @@ import feedbackRoutes from "./src/routes/feedback.routes.js";
 import qrcodeRoutes from "./src/routes/qrcode.routes.js";
 import driverRoutes from "./src/routes/driver.routes.js";
 import paymentRoutes from "./src/routes/payment.routes.js";
+import dashboardRoutes from "./src/routes/dashboard.routes.js";
 
 // Config
 import { connectDB } from "./src/config/db.js";
@@ -70,6 +71,7 @@ app.use("/api/v1/feedback", feedbackRoutes);
 app.use("/api/v1/qrcode", qrcodeRoutes);
 app.use("/api/v1/driver", driverRoutes);
 app.use("/api/v1/order", paymentRoutes);
+app.use("/api/v1/dashboard", dashboardRoutes);
 
 // Use server.listen instead of app.listen
 server.listen(ENV.PORT, () => {
