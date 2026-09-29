@@ -25,6 +25,87 @@ function dayKey(date) {
     return date.toISOString().slice(0, 10); // "YYYY-MM-DD"
 }
 
+// Get revenue + top products for an arbitrary date range — kept separate
+// from getDashboardStats so switching the dashboard's date filter doesn't
+// have to re-run the heavier all-time aggregates on every click.
+export const getRevenueSummary = async (req, res) => {
+    try {
+        const { from, to } = req.query;
+        const dateMatch = {};
+        if (from) dateMatch.$gte = new Date(from);
+        if (to) dateMatch.$lte = new Date(to);
+        const hasRange = Object.keys(dateMatch).length > 0;
+
+        const [revenueAgg, topProductsAgg] = await Promise.all([
+            Order.aggregate([
+                {
+                    $match: {
+                        status: REVENUE_STATUS,
+                        ...(hasRange && { createdAt: dateMatch }),
+                    },
+                },
+                {
+                    $group: {
+                        _id: null,
+                        total: { $sum: "$totalAmount" },
+                        totalOrders: { $sum: 1 },
+                    },
+                },
+            ]),
+            Order.aggregate([
+                ...(hasRange ? [{ $match: { createdAt: dateMatch } }] : []),
+                { $unwind: "$items" },
+                {
+                    $group: {
+                        _id: "$items.product",
+                        unitsSold: { $sum: "$items.quantity" },
+                        revenue: {
+                            $sum: {
+                                $multiply: ["$items.quantity", "$items.price"],
+                            },
+                        },
+                    },
+                },
+                { $sort: { revenue: -1 } },
+                { $limit: TOP_PRODUCTS_LIMIT },
+                {
+                    $lookup: {
+                        from: "products",
+                        localField: "_id",
+                        foreignField: "_id",
+                        as: "product",
+                    },
+                },
+                {
+                    $unwind: {
+                        path: "$product",
+                        preserveNullAndEmptyArrays: true,
+                    },
+                },
+            ]),
+        ]);
+
+        const topProducts = topProductsAgg
+            .filter((p) => p.product)
+            .map((p) => ({
+                productId: p._id,
+                name: p.product.name,
+                unitsSold: p.unitsSold,
+                revenue: p.revenue,
+            }));
+
+        res.status(200).json({
+            revenue: {
+                total: revenueAgg[0]?.total ?? 0,
+                totalOrders: revenueAgg[0]?.totalOrders ?? 0,
+            },
+            topProducts,
+        });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
 // Get aggregated stats for the admin dashboard
 export const getDashboardStats = async (req, res) => {
     try {

@@ -16,11 +16,15 @@ export const upsertQRCode = async (req, res) => {
         const { type, accountName, accountNumber } = req.body;
 
         if (!type || !accountName || !accountNumber) {
-            return res.status(400).json({ message: "All fields are required." });
+            return res
+                .status(400)
+                .json({ message: "All fields are required." });
         }
 
         if (!req.file) {
-            return res.status(400).json({ message: "QR code image is required." });
+            return res
+                .status(400)
+                .json({ message: "QR code image is required." });
         }
 
         const qrcode = await QRCode.findOneAndUpdate(
@@ -30,9 +34,9 @@ export const upsertQRCode = async (req, res) => {
                 accountName,
                 accountNumber,
                 imageUrl: req.file.path,
-                isActive: true
+                isActive: true,
             },
-            { upsert: true, new: true }
+            { upsert: true, new: true },
         );
 
         res.status(200).json({ success: true, qrcode });
@@ -45,7 +49,8 @@ export const upsertQRCode = async (req, res) => {
 export const toggleQRCode = async (req, res) => {
     try {
         const qrcode = await QRCode.findById(req.params.id);
-        if (!qrcode) return res.status(404).json({ message: "QR code not found." });
+        if (!qrcode)
+            return res.status(404).json({ message: "QR code not found." });
 
         qrcode.isActive = !qrcode.isActive;
         await qrcode.save();

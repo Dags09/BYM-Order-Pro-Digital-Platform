@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
     AreaChart,
     Area,
@@ -18,17 +18,148 @@ import {
     Package,
     AlertTriangle,
     Star,
+    Loader2,
 } from "lucide-react";
 import api from "../../lib/axios";
 import StatCard from "../../components/pageComponents/admin/statCard";
 import { formatPrice, formatShortDate } from "../../utils/formatters";
-import type { DashboardStats } from "../../types/dashboard";
+import type { DashboardStats, RevenueSummary } from "../../types/dashboard";
 import { STATUS_COLORS, STATUS_LABELS } from "../../utils/constant";
+
+type RangePreset = "today" | "week" | "month" | "year" | "custom";
+
+const RANGE_OPTIONS: { value: RangePreset; label: string }[] = [
+    { value: "today", label: "Today" },
+    { value: "week", label: "This week" },
+    { value: "month", label: "This month" },
+    { value: "year", label: "This year" },
+    { value: "custom", label: "Custom" },
+];
+
+function toDateInputValue(date: Date) {
+    return date.toISOString().slice(0, 10); // "YYYY-MM-DD"
+}
+
+// Computes the [from, to] window for a preset. Custom returns null until
+// the person has picked both ends of the range.
+function computeRange(
+    preset: RangePreset,
+    customFrom: string,
+    customTo: string,
+): { from: Date; to: Date } | null {
+    const now = new Date();
+
+    if (preset === "today") {
+        const from = new Date(now);
+        from.setHours(0, 0, 0, 0);
+        return { from, to: now };
+    }
+    if (preset === "week") {
+        const day = now.getDay(); // 0 = Sunday
+        const diffToMonday = day === 0 ? 6 : day - 1;
+        const from = new Date(now);
+        from.setDate(now.getDate() - diffToMonday);
+        from.setHours(0, 0, 0, 0);
+        return { from, to: now };
+    }
+    if (preset === "month") {
+        const from = new Date(now.getFullYear(), now.getMonth(), 1);
+        return { from, to: now };
+    }
+    if (preset === "year") {
+        const from = new Date(now.getFullYear(), 0, 1);
+        return { from, to: now };
+    }
+    // custom
+    if (!customFrom || !customTo) return null;
+    const from = new Date(`${customFrom}T00:00:00`);
+    const to = new Date(`${customTo}T23:59:59`);
+    return { from, to };
+}
+
+interface RangeFilterProps {
+    preset: RangePreset;
+    onPresetChange: (p: RangePreset) => void;
+    customFrom: string;
+    customTo: string;
+    onCustomChange: (from: string, to: string) => void;
+}
+
+function RevenueRangeFilter({
+    preset,
+    onPresetChange,
+    customFrom,
+    customTo,
+    onCustomChange,
+}: RangeFilterProps) {
+    return (
+        <div className="flex flex-wrap items-center gap-2">
+            <div className="flex flex-wrap gap-1 rounded-md border border-ink/10 bg-white p-1">
+                {RANGE_OPTIONS.map((opt) => (
+                    <button
+                        key={opt.value}
+                        onClick={() => onPresetChange(opt.value)}
+                        className={`rounded-[4px] px-2.5 py-1.5 text-xs font-medium transition-colors ${
+                            preset === opt.value
+                                ? "bg-crate text-white"
+                                : "text-ink/60 hover:text-ink"
+                        }`}
+                    >
+                        {opt.label}
+                    </button>
+                ))}
+            </div>
+            {preset === "custom" && (
+                <div className="flex items-center gap-1.5">
+                    <input
+                        type="date"
+                        value={customFrom}
+                        max={customTo || undefined}
+                        onChange={(e) =>
+                            onCustomChange(e.target.value, customTo)
+                        }
+                        className="rounded-md border-2 border-ink/20 bg-white px-2 py-1.5 text-xs text-ink outline-none transition focus:border-crate"
+                    />
+                    <span className="text-xs text-ink/40">to</span>
+                    <input
+                        type="date"
+                        value={customTo}
+                        min={customFrom || undefined}
+                        onChange={(e) =>
+                            onCustomChange(customFrom, e.target.value)
+                        }
+                        className="rounded-md border-2 border-ink/20 bg-white px-2 py-1.5 text-xs text-ink outline-none transition focus:border-crate"
+                    />
+                </div>
+            )}
+        </div>
+    );
+}
+
+function getErrorMessage(err: unknown, fallback: string) {
+    const message = (err as { response?: { data?: { message?: string } } })
+        .response?.data?.message;
+    return message ?? fallback;
+}
 
 export default function AdminDashboardPage() {
     const [stats, setStats] = useState<DashboardStats | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+
+    const [preset, setPreset] = useState<RangePreset>("month");
+    const [customFrom, setCustomFrom] = useState(
+        toDateInputValue(new Date(Date.now() - 6 * 24 * 60 * 60 * 1000)),
+    );
+    const [customTo, setCustomTo] = useState(toDateInputValue(new Date()));
+    const [summary, setSummary] = useState<RevenueSummary | null>(null);
+    const [summaryLoading, setSummaryLoading] = useState(true);
+    const [summaryError, setSummaryError] = useState<string | null>(null);
+
+    const range = useMemo(
+        () => computeRange(preset, customFrom, customTo),
+        [preset, customFrom, customTo],
+    );
 
     useEffect(() => {
         api.get("/dashboard/stats")
@@ -36,6 +167,25 @@ export default function AdminDashboardPage() {
             .catch(() => setError("Couldn't load dashboard stats."))
             .finally(() => setLoading(false));
     }, []);
+
+    useEffect(() => {
+        if (!range) return;
+        setSummaryLoading(true);
+        setSummaryError(null);
+        api.get("/dashboard/revenue-summary", {
+            params: {
+                from: range.from.toISOString(),
+                to: range.to.toISOString(),
+            },
+        })
+            .then(({ data }) => setSummary(data))
+            .catch((err) =>
+                setSummaryError(
+                    getErrorMessage(err, "Couldn't load this date range."),
+                ),
+            )
+            .finally(() => setSummaryLoading(false));
+    }, [range]);
 
     if (loading) {
         return (
@@ -69,14 +219,39 @@ export default function AdminDashboardPage() {
                 </p>
             </div>
 
+            <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-ink/10 bg-kraft/40 px-4 py-3">
+                <p className="text-xs font-medium uppercase tracking-wide text-ink/50">
+                    Date range for revenue &amp; top products
+                </p>
+                <RevenueRangeFilter
+                    preset={preset}
+                    onPresetChange={setPreset}
+                    customFrom={customFrom}
+                    customTo={customTo}
+                    onCustomChange={(from, to) => {
+                        setCustomFrom(from);
+                        setCustomTo(to);
+                    }}
+                />
+            </div>
+            {summaryError && (
+                <div className="rounded-lg border border-route/20 bg-route/5 p-3 text-sm text-route">
+                    {summaryError}
+                </div>
+            )}
+
             {/* Stat cards */}
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
                 <StatCard
                     label="Total revenue"
-                    value={formatPrice(stats.revenue.total)}
+                    value={
+                        summaryLoading && !summary
+                            ? "…"
+                            : formatPrice(summary?.revenue.total ?? 0)
+                    }
                     icon={Wallet}
                     accent="crate"
-                    footnote={`${stats.revenue.totalOrders} completed orders`}
+                    footnote={`${summary?.revenue.totalOrders ?? 0} completed orders`}
                 />
                 <StatCard
                     label="Orders (all time)"
@@ -277,16 +452,23 @@ export default function AdminDashboardPage() {
             {/* Top products + recent orders */}
             <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
                 <div className="rounded-lg border border-black/5 bg-white p-5 shadow-sm">
-                    <h2 className="font-display text-sm font-semibold text-ink">
-                        Top products
-                    </h2>
-                    {stats.topProducts.length === 0 ? (
+                    <div className="flex items-center justify-between">
+                        <h2 className="font-display text-sm font-semibold text-ink">
+                            Top products
+                        </h2>
+                        {summaryLoading && (
+                            <Loader2 className="h-3.5 w-3.5 animate-spin text-ink/30" />
+                        )}
+                    </div>
+                    {!summary || summary.topProducts.length === 0 ? (
                         <p className="mt-4 text-sm text-ink/50">
-                            No sales yet.
+                            {summaryLoading
+                                ? "Loading…"
+                                : "No sales in this date range."}
                         </p>
                     ) : (
                         <ul className="mt-4 space-y-3">
-                            {stats.topProducts.map((p, i) => (
+                            {summary.topProducts.map((p, i) => (
                                 <li
                                     key={p.productId}
                                     className="flex items-center justify-between gap-3"

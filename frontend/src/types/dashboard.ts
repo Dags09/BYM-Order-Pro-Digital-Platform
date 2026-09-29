@@ -27,6 +27,14 @@ export interface RecentOrder {
     };
 }
 
+export interface RevenueSummary {
+    revenue: {
+        total: number;
+        totalOrders: number;
+    };
+    topProducts: TopProduct[];
+}
+
 export interface DashboardStats {
     revenue: {
         total: number;

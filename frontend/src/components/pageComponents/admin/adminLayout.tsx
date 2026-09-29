@@ -35,22 +35,22 @@ const navItems: AdminNavItem[] = [
         name: "Products",
         path: "/admin/products",
         icon: Package,
-        enabled: false,
+        enabled: true,
     },
     {
         name: "Categories",
         path: "/admin/categories",
         icon: Tags,
-        enabled: false,
+        enabled: true,
     },
     { name: "Users", path: "/admin/users", icon: Users, enabled: true },
     {
         name: "Feedback",
         path: "/admin/feedback",
         icon: MessageSquare,
-        enabled: false,
+        enabled: true,
     },
-    { name: "QR Codes", path: "/admin/qrcodes", icon: QrCode, enabled: false },
+    { name: "QR Codes", path: "/admin/qrcodes", icon: QrCode, enabled: true },
 ];
 
 export default function AdminLayout() {

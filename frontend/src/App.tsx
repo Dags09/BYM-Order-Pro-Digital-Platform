@@ -14,6 +14,12 @@ import ProfilePage from "./pages/customer/profilePage";
 import AdminLayout from "./components/pageComponents/admin/adminLayout";
 import AdminDashboardPage from "./pages/admin/adminDashboardPage";
 import AdminUsersPage from "./pages/admin/adminUsersPage";
+import AdminOrdersPage from "./pages/admin/adminOrdersPage";
+import AdminOrderDetailPage from "./pages/admin/adminOrderDetailPage";
+import AdminProductsPage from "./pages/admin/adminProductsPage";
+import AdminCategoriesPage from "./pages/admin/adminCategoriesPage";
+import AdminFeedbackPage from "./pages/admin/adminFeedbackPage";
+import AdminQrCodesPage from "./pages/admin/adminQrCodesPage";
 
 import StaffLayout from "./components/pageComponents/staff/staffLayout";
 import DeliveriesPage from "./pages/staff/deliveriesPage";
@@ -79,7 +85,19 @@ function App() {
                     }
                 >
                     <Route index element={<AdminDashboardPage />} />
+                    <Route path="orders" element={<AdminOrdersPage />} />
+                    <Route
+                        path="orders/:id"
+                        element={<AdminOrderDetailPage />}
+                    />
+                    <Route path="products" element={<AdminProductsPage />} />
+                    <Route
+                        path="categories"
+                        element={<AdminCategoriesPage />}
+                    />
                     <Route path="users" element={<AdminUsersPage />} />
+                    <Route path="feedback" element={<AdminFeedbackPage />} />
+                    <Route path="qrcodes" element={<AdminQrCodesPage />} />
                     <Route path="settings" element={<AccountSettings />} />
                 </Route>
 
