@@ -3,6 +3,7 @@ import { Search, Tags } from "lucide-react";
 import api from "../../lib/axios";
 import type { Category } from "../../types/category";
 import { formatShortDate } from "../../utils/formatters";
+import { PageSkeleton } from "../../components/skeletonLoader";
 
 interface CategoryWithAuthor extends Category {
     addedBy?: { firstName: string; lastName: string } | null;
@@ -28,11 +29,7 @@ export default function AdminCategoriesPage() {
     );
 
     if (loading) {
-        return (
-            <div className="flex min-h-[50vh] items-center justify-center">
-                <div className="h-10 w-10 animate-spin rounded-full border-4 border-crate border-t-transparent" />
-            </div>
-        );
+        return <PageSkeleton variant="table" />;
     }
 
     if (error) {

@@ -13,6 +13,7 @@ import {
 import { Package, Tags, ClipboardList, Truck } from "lucide-react";
 import useAuthStore from "../../store/authStore";
 import api from "../../lib/axios";
+import { ChartSkeleton } from "../../components/skeletonLoader";
 import type { Order, OrderStatus } from "../../types/order";
 import type { Product } from "../../types/product";
 import { STATUS_COLORS, STATUS_LABELS } from "../../utils/constant";
@@ -501,14 +502,6 @@ export default function ManagerDashboardPage() {
                     </div>
                 </>
             )}
-        </div>
-    );
-}
-
-function ChartSkeleton() {
-    return (
-        <div className="flex h-full items-center justify-center">
-            <div className="h-6 w-6 animate-spin rounded-full border-4 border-crate border-t-transparent" />
         </div>
     );
 }

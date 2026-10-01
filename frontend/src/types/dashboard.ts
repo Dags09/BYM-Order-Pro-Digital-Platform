@@ -32,7 +32,13 @@ export interface RevenueSummary {
         total: number;
         totalOrders: number;
     };
+    products: {
+        distinctProducts: number;
+        unitsSold: number;
+    };
+    revenueTrend: RevenueTrendPoint[];
     topProducts: TopProduct[];
+    ordersByStatus: OrderStatusCount[];
 }
 
 export interface DashboardStats {

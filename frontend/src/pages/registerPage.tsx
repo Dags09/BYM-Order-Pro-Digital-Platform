@@ -5,6 +5,7 @@ import api from "../lib/axios";
 import SuccessMessage from "../components/pageComponents/registerPage/successMessage";
 import { Field } from "../components/helper/field";
 import StoreLocation from "../components/pageComponents/registerPage/storeLocation";
+import { Skeleton } from "../components/skeletonLoader";
 
 type FormFields = {
     firstName: string;
@@ -319,9 +320,16 @@ export default function Register() {
                         <button
                             type="submit"
                             disabled={loading}
+                            aria-label={
+                                loading ? "Creating account" : undefined
+                            }
                             className="w-full rounded-md bg-crate py-2.5 text-sm font-semibold text-kraft shadow-[3px_3px_0_0_theme(colors.ink)] transition hover:-translate-y-0.5 hover:shadow-[4px_4px_0_0_theme(colors.ink)] disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0 disabled:hover:shadow-[3px_3px_0_0_theme(colors.ink)]"
                         >
-                            {loading ? "Creating account..." : "Create account"}
+                            {loading ? (
+                                <Skeleton className="mx-auto h-4 w-24 bg-kraft/50" />
+                            ) : (
+                                "Create account"
+                            )}
                         </button>
                     </form>
 

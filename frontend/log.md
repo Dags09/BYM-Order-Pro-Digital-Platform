@@ -6,6 +6,8 @@ bugs found
 
 3. when logging out while it has a selected product to pruchased which will be seen in the cart, then logging in that item are still remain in their( it should be gone if logging out and list will be gone)
 
+the above need to tested if it was fixed
+
 improvement needed:
 
 the commented is pending
@@ -21,3 +23,11 @@ the commented is pending
 6. needs an animations scroll -->
 
 1. in order details (manager) the payment evidence should shown
+
+2. in manager their should be a stat card for total product in it
+
+3. both manager and admin - when clicking the low stack stat card it will automatically redirect into products and shows low stack products
+
+4. the manager should noy able to delete a product and category only archive (and when a product or category in archive it well not be shown on the list of manager and customer)
+
+5. in admin, should able to see the archived products and category and who archived them

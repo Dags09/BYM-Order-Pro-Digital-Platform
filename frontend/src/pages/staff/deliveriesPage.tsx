@@ -12,6 +12,7 @@ import socket from "../../lib/socket";
 import type { Order } from "../../types/order";
 import { formatDateTime, formatPrice, isSameDay } from "../../utils/formatters";
 import { STATUS_COLORS, STATUS_LABELS } from "../../utils/constant";
+import { PageSkeleton } from "../../components/skeletonLoader";
 
 // Statuses a driver is actively working on. Once an order lands in
 // "delivered" or "cancelled" it belongs on the history page instead.
@@ -69,11 +70,7 @@ export default function DeliveriesPage() {
         });
 
     if (loading) {
-        return (
-            <div className="flex min-h-[50vh] items-center justify-center">
-                <div className="h-10 w-10 animate-spin rounded-full border-4 border-crate border-t-transparent" />
-            </div>
-        );
+        return <PageSkeleton variant="cards" rows={3} />;
     }
 
     return (

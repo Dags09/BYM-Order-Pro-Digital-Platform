@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { Navigate } from "react-router-dom";
 import useAuthStore from "../store/authStore.ts";
 import api from "../lib/axios.ts";
+import { Skeleton } from "./skeletonLoader";
 
 interface ProtectedRouteProps {
     children: ReactNode;
@@ -53,11 +54,14 @@ function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) {
         restore();
     }, []);
 
-    // still checking — show nothing (or a spinner)
+    // Still checking the restored session.
     if (checking) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-gray-50">
-                <div className="w-10 h-10 border-4 border-green-600 border-t-transparent rounded-full animate-spin" />
+            <div className="flex min-h-screen items-center justify-center bg-gray-50">
+                <div className="space-y-3">
+                    <Skeleton className="h-5 w-48" />
+                    <Skeleton className="h-3 w-32" />
+                </div>
             </div>
         );
     }

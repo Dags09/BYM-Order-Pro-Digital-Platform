@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
-import { QrCode, Upload, Power, Loader2, ImageOff } from "lucide-react";
+import { QrCode, Upload, Power, ImageOff } from "lucide-react";
 import api from "../../lib/axios";
 import type { QRCodeEntry } from "../../types/qrcode";
+import { PageSkeleton } from "../../components/skeletonLoader";
+import { Skeleton } from "../../components/skeletonLoader";
 
 const QR_TYPES: { type: QRCodeEntry["type"]; label: string }[] = [
     { type: "gcash", label: "GCash" },
@@ -125,7 +127,7 @@ function QRCard({ type, label, entry, onSaved, onToggled }: QRCardProps) {
                         }`}
                     >
                         {toggling ? (
-                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                            <Skeleton className="h-3.5 w-3.5 rounded-full" />
                         ) : (
                             <Power className="h-3.5 w-3.5" />
                         )}
@@ -235,7 +237,7 @@ function QRCard({ type, label, entry, onSaved, onToggled }: QRCardProps) {
                             className="flex items-center gap-2 rounded-md bg-crate px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-crate-dark disabled:opacity-50"
                         >
                             {saving && (
-                                <Loader2 className="h-4 w-4 animate-spin" />
+                                <Skeleton className="h-4 w-4 rounded-full bg-white/50" />
                             )}
                             Save
                         </button>
@@ -281,11 +283,7 @@ export default function AdminQrCodesPage() {
     };
 
     if (loading) {
-        return (
-            <div className="flex min-h-[50vh] items-center justify-center">
-                <div className="h-10 w-10 animate-spin rounded-full border-4 border-crate border-t-transparent" />
-            </div>
-        );
+        return <PageSkeleton variant="cards" rows={2} />;
     }
 
     if (error) {

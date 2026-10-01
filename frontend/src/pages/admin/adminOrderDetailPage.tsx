@@ -5,6 +5,7 @@ import api from "../../lib/axios";
 import type { Order } from "../../types/order";
 import { formatDateTime, formatPrice } from "../../utils/formatters";
 import { STATUS_COLORS, STATUS_LABELS } from "../../utils/constant";
+import { PageSkeleton } from "../../components/skeletonLoader";
 
 function getErrorMessage(err: unknown, fallback: string) {
     const message = (err as { response?: { data?: { message?: string } } })
@@ -30,11 +31,7 @@ export default function AdminOrderDetailPage() {
     }, [id]);
 
     if (loading) {
-        return (
-            <div className="flex min-h-[50vh] items-center justify-center">
-                <div className="h-10 w-10 animate-spin rounded-full border-4 border-crate border-t-transparent" />
-            </div>
-        );
+        return <PageSkeleton variant="detail" />;
     }
 
     if (error || !order) {
@@ -111,7 +108,10 @@ export default function AdminOrderDetailPage() {
                             href={`tel:${order.customer.phoneNumber}`}
                             className="flex items-center gap-2 text-crate hover:underline"
                         >
-                            <Phone className="h-4 w-4 shrink-0" strokeWidth={1.75} />
+                            <Phone
+                                className="h-4 w-4 shrink-0"
+                                strokeWidth={1.75}
+                            />
                             {order.customer.phoneNumber}
                         </a>
                     )}
@@ -142,7 +142,10 @@ export default function AdminOrderDetailPage() {
                 </p>
                 {order.driver ? (
                     <div className="mt-2 flex items-center gap-2 text-sm text-ink">
-                        <Truck className="h-4 w-4 text-ink/40" strokeWidth={1.75} />
+                        <Truck
+                            className="h-4 w-4 text-ink/40"
+                            strokeWidth={1.75}
+                        />
                         {order.driver.firstName} {order.driver.lastName}
                     </div>
                 ) : (

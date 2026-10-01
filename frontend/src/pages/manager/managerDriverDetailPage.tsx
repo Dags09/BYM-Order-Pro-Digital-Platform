@@ -17,6 +17,7 @@ import {
     formatShortDate,
 } from "../../utils/formatters";
 import { STATUS_COLORS, STATUS_LABELS } from "../../utils/constant";
+import { PageSkeleton } from "../../components/skeletonLoader";
 
 type FilterTab = "all" | OrderStatus;
 
@@ -92,11 +93,7 @@ export default function ManagerDriverDetailPage() {
     }, [id]);
 
     if (loading) {
-        return (
-            <div className="flex min-h-[50vh] items-center justify-center">
-                <div className="h-10 w-10 animate-spin rounded-full border-4 border-crate border-t-transparent" />
-            </div>
-        );
+        return <PageSkeleton variant="detail" />;
     }
 
     if (error || !driver) {

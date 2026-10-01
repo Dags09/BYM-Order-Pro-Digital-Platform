@@ -5,7 +5,6 @@ import {
     Pencil,
     Trash2,
     X,
-    Loader2,
     Tag,
     ChevronLeft,
     ChevronRight,
@@ -13,6 +12,8 @@ import {
 import api from "../../lib/axios";
 import type { Category } from "../../types/category";
 import { formatShortDate } from "../../utils/formatters";
+import { PageSkeleton } from "../../components/skeletonLoader";
+import { Skeleton } from "../../components/skeletonLoader";
 
 const PAGE_SIZE = 9;
 
@@ -140,11 +141,7 @@ export default function ManagerCategoriesPage() {
     const labelClass = "mb-1.5 block text-sm font-medium text-ink";
 
     if (loading) {
-        return (
-            <div className="flex min-h-[50vh] items-center justify-center">
-                <div className="h-10 w-10 animate-spin rounded-full border-4 border-crate border-t-transparent" />
-            </div>
-        );
+        return <PageSkeleton variant="table" />;
     }
 
     return (
@@ -417,7 +414,7 @@ export default function ManagerCategoriesPage() {
                                     className="flex items-center gap-2 rounded-md bg-crate px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-crate-dark disabled:opacity-60"
                                 >
                                     {saving && (
-                                        <Loader2 className="h-4 w-4 animate-spin" />
+                                        <Skeleton className="h-4 w-4 rounded-full bg-white/50" />
                                     )}
                                     {editingId
                                         ? "Save changes"
@@ -457,7 +454,7 @@ export default function ManagerCategoriesPage() {
                                 className="flex items-center gap-2 rounded-md bg-route px-4 py-2 text-sm font-medium text-white transition-colors hover:opacity-90 disabled:opacity-60"
                             >
                                 {deleting && (
-                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                    <Skeleton className="h-4 w-4 rounded-full bg-white/50" />
                                 )}
                                 Delete
                             </button>

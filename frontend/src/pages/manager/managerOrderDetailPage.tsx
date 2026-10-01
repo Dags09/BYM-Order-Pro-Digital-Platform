@@ -7,12 +7,13 @@ import {
     Mail,
     Truck,
     CheckCircle2,
-    Loader2,
 } from "lucide-react";
 import api from "../../lib/axios";
 import type { Order, OrderStatus } from "../../types/order";
 import { formatPrice, formatDateTime } from "../../utils/formatters";
 import { STATUS_COLORS, STATUS_LABELS } from "../../utils/constant";
+import { PageSkeleton } from "../../components/skeletonLoader";
+import { Skeleton } from "../../components/skeletonLoader";
 
 interface DriverOption {
     _id: string;
@@ -125,11 +126,7 @@ export default function ManagerOrderDetailPage() {
     };
 
     if (loading) {
-        return (
-            <div className="flex min-h-[50vh] items-center justify-center">
-                <div className="h-10 w-10 animate-spin rounded-full border-4 border-crate border-t-transparent" />
-            </div>
-        );
+        return <PageSkeleton variant="detail" />;
     }
 
     if (error || !order) {
@@ -375,7 +372,7 @@ export default function ManagerOrderDetailPage() {
                                 className="flex items-center gap-2 rounded-md bg-crate px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-crate-dark disabled:opacity-50"
                             >
                                 {assigning && (
-                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                    <Skeleton className="h-4 w-4 rounded-full bg-white/50" />
                                 )}
                                 Confirm
                             </button>

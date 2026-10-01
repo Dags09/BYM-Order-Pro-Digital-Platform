@@ -7,6 +7,7 @@ import useCartStore from "../../../../store/cartStore";
 import { formatPrice } from "../../../../utils/formatters";
 import NavBar from "../homePage/navBar";
 import Footer from "../homePage/footer";
+import { Skeleton } from "../../../skeletonLoader";
 
 import type { QRCodeEntry } from "../../../../types/qrcode";
 import type {
@@ -340,11 +341,18 @@ export default function CheckoutPage() {
                                         type="button"
                                         onClick={handlePlaceOrder}
                                         disabled={loading}
+                                        aria-label={
+                                            loading
+                                                ? "Placing order"
+                                                : undefined
+                                        }
                                         className="mt-5 w-full rounded-md bg-signal py-2.5 text-sm font-semibold text-ink transition hover:bg-signal-dark disabled:cursor-not-allowed disabled:opacity-60"
                                     >
-                                        {loading
-                                            ? "Placing order..."
-                                            : "Place order"}
+                                        {loading ? (
+                                            <Skeleton className="mx-auto h-4 w-24" />
+                                        ) : (
+                                            "Place order"
+                                        )}
                                     </button>
 
                                     <Link

@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { Package, Eye, EyeOff } from "lucide-react";
 import api from "../lib/axios";
 import useAuthStore from "../store/authStore";
+import { Skeleton } from "../components/skeletonLoader";
 
 export default function Login() {
     const navigate = useNavigate();
@@ -153,9 +154,14 @@ export default function Login() {
                         <button
                             type="submit"
                             disabled={loading}
+                            aria-label={loading ? "Logging in" : undefined}
                             className="w-full rounded-md bg-crate py-2.5 text-sm font-semibold text-kraft shadow-[3px_3px_0_0_theme(colors.ink)] transition hover:-translate-y-0.5 hover:shadow-[3px_3px_0_0_theme(colors.ink)] disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0 disabled:hover:shadow-[3px_3px_0_0_theme(colors.ink)]"
                         >
-                            {loading ? "Logging in..." : "Log in"}
+                            {loading ? (
+                                <Skeleton className="mx-auto h-4 w-20 bg-kraft/50" />
+                            ) : (
+                                "Log in"
+                            )}
                         </button>
                     </form>
 

@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import { Package, CheckCircle2, XCircle, Loader2 } from "lucide-react";
+import { Package, CheckCircle2, XCircle } from "lucide-react";
 import api from "../lib/axios";
 import type { Status } from "../types/statusVerification";
+import { Skeleton } from "../components/skeletonLoader";
 
 export default function VerifyEmail() {
     const [searchParams] = useSearchParams();
@@ -84,15 +85,11 @@ export default function VerifyEmail() {
 
                 <div className="rounded-lg border-2 border-ink bg-white p-7 text-center shadow-[5px_5px_0_0_theme(colors.crate)]">
                     {status === "verifying" && (
-                        <>
-                            <Loader2 className="mx-auto h-10 w-10 animate-spin text-crate" />
-                            <h1 className="mt-4 font-display text-xl font-bold text-ink">
-                                Verifying your email...
-                            </h1>
-                            <p className="mt-1 text-sm text-ink/60">
-                                Hang tight, this only takes a moment.
-                            </p>
-                        </>
+                        <div role="status" aria-label="Verifying email">
+                            <Skeleton className="mx-auto h-10 w-10 rounded-full" />
+                            <Skeleton className="mx-auto mt-5 h-6 w-48" />
+                            <Skeleton className="mx-auto mt-3 h-4 w-56 max-w-full" />
+                        </div>
                     )}
 
                     {status === "success" && (
@@ -152,11 +149,18 @@ export default function VerifyEmail() {
                                             resendStatus === "sending" ||
                                             !resendEmail
                                         }
+                                        aria-label={
+                                            resendStatus === "sending"
+                                                ? "Sending verification email"
+                                                : undefined
+                                        }
                                         className="rounded-md bg-signal py-2 text-sm font-semibold text-ink transition hover:bg-signal-dark disabled:cursor-not-allowed disabled:opacity-60"
                                     >
-                                        {resendStatus === "sending"
-                                            ? "Sending..."
-                                            : "Resend email"}
+                                        {resendStatus === "sending" ? (
+                                            <Skeleton className="mx-auto h-4 w-28" />
+                                        ) : (
+                                            "Resend email"
+                                        )}
                                     </button>
                                 </form>
 

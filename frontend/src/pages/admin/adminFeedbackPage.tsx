@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
-import { Star, MessageSquare, Search, Trash2, Loader2 } from "lucide-react";
+import { Star, MessageSquare, Search, Trash2 } from "lucide-react";
 import api from "../../lib/axios";
 import { formatDateTime } from "../../utils/formatters";
+import { PageSkeleton } from "../../components/skeletonLoader";
+import { Skeleton } from "../../components/skeletonLoader";
 
 interface FeedbackEntry {
     _id: string;
@@ -109,11 +111,7 @@ export default function AdminFeedbackPage() {
     };
 
     if (loading) {
-        return (
-            <div className="flex min-h-[50vh] items-center justify-center">
-                <div className="h-10 w-10 animate-spin rounded-full border-4 border-crate border-t-transparent" />
-            </div>
-        );
+        return <PageSkeleton variant="table" />;
     }
 
     if (error) {
@@ -230,7 +228,7 @@ export default function AdminFeedbackPage() {
                                         className="flex shrink-0 items-center gap-1.5 rounded-md border border-ink/15 px-2.5 py-1.5 text-xs font-medium text-ink/60 transition hover:border-route/30 hover:text-route disabled:opacity-50"
                                     >
                                         {deletingId === f._id ? (
-                                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                            <Skeleton className="h-3.5 w-3.5 rounded-full" />
                                         ) : (
                                             <Trash2 className="h-3.5 w-3.5" />
                                         )}
@@ -278,7 +276,7 @@ export default function AdminFeedbackPage() {
                                 className="flex items-center gap-2 rounded-md bg-route px-4 py-2 text-sm font-medium text-white transition-colors hover:opacity-90 disabled:opacity-50"
                             >
                                 {deletingId === deleteTarget._id && (
-                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                    <Skeleton className="h-4 w-4 rounded-full bg-white/50" />
                                 )}
                                 Remove
                             </button>

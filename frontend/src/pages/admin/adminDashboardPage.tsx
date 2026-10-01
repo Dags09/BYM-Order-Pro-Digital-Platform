@@ -18,17 +18,22 @@ import {
     Package,
     AlertTriangle,
     Star,
-    Loader2,
 } from "lucide-react";
 import api from "../../lib/axios";
 import StatCard from "../../components/pageComponents/admin/statCard";
+import {
+    ChartSkeleton,
+    PageSkeleton,
+    Skeleton,
+} from "../../components/skeletonLoader";
 import { formatPrice, formatShortDate } from "../../utils/formatters";
 import type { DashboardStats, RevenueSummary } from "../../types/dashboard";
 import { STATUS_COLORS, STATUS_LABELS } from "../../utils/constant";
 
-type RangePreset = "today" | "week" | "month" | "year" | "custom";
+type RangePreset = "all" | "today" | "week" | "month" | "year" | "custom";
 
 const RANGE_OPTIONS: { value: RangePreset; label: string }[] = [
+    { value: "all", label: "All time" },
     { value: "today", label: "Today" },
     { value: "week", label: "This week" },
     { value: "month", label: "This month" },
@@ -36,99 +41,103 @@ const RANGE_OPTIONS: { value: RangePreset; label: string }[] = [
     { value: "custom", label: "Custom" },
 ];
 
-function toDateInputValue(date: Date) {
-    return date.toISOString().slice(0, 10); // "YYYY-MM-DD"
-}
-
-// Computes the [from, to] window for a preset. Custom returns null until
-// the person has picked both ends of the range.
+// Computes the [from, to] window for a preset — mirrors the manager
+// dashboard's getDateRange so both filters behave identically. "All time"
+// returns null, which tells the fetch below to omit from/to entirely.
 function computeRange(
     preset: RangePreset,
     customFrom: string,
     customTo: string,
 ): { from: Date; to: Date } | null {
-    const now = new Date();
+    if (preset === "all") return null;
 
+    const today = new Date();
+    const to = new Date(today);
+    to.setHours(23, 59, 59, 999);
+
+    if (preset === "custom") {
+        const from = customFrom ? new Date(`${customFrom}T00:00:00`) : today;
+        const customEnd = customTo ? new Date(`${customTo}T23:59:59.999`) : to;
+        return { from, to: customEnd >= from ? customEnd : from };
+    }
+
+    const from = new Date(today);
     if (preset === "today") {
-        const from = new Date(now);
         from.setHours(0, 0, 0, 0);
-        return { from, to: now };
-    }
-    if (preset === "week") {
-        const day = now.getDay(); // 0 = Sunday
-        const diffToMonday = day === 0 ? 6 : day - 1;
-        const from = new Date(now);
-        from.setDate(now.getDate() - diffToMonday);
+    } else if (preset === "week") {
         from.setHours(0, 0, 0, 0);
-        return { from, to: now };
+        from.setDate(from.getDate() - ((from.getDay() + 6) % 7));
+    } else if (preset === "month") {
+        from.setHours(0, 0, 0, 0);
+        from.setDate(1);
+    } else {
+        from.setHours(0, 0, 0, 0);
+        from.setMonth(0, 1);
     }
-    if (preset === "month") {
-        const from = new Date(now.getFullYear(), now.getMonth(), 1);
-        return { from, to: now };
-    }
-    if (preset === "year") {
-        const from = new Date(now.getFullYear(), 0, 1);
-        return { from, to: now };
-    }
-    // custom
-    if (!customFrom || !customTo) return null;
-    const from = new Date(`${customFrom}T00:00:00`);
-    const to = new Date(`${customTo}T23:59:59`);
+
     return { from, to };
 }
 
 interface RangeFilterProps {
-    preset: RangePreset;
-    onPresetChange: (p: RangePreset) => void;
+    value: RangePreset;
+    onChange: (value: RangePreset) => void;
     customFrom: string;
     customTo: string;
-    onCustomChange: (from: string, to: string) => void;
+    onCustomFromChange: (value: string) => void;
+    onCustomToChange: (value: string) => void;
 }
 
-function RevenueRangeFilter({
-    preset,
-    onPresetChange,
+// Matches the manager dashboard's DateFilter — same options, same markup
+// and styling — so the two consoles feel like one product.
+function DateFilter({
+    value,
+    onChange,
     customFrom,
     customTo,
-    onCustomChange,
+    onCustomFromChange,
+    onCustomToChange,
 }: RangeFilterProps) {
     return (
-        <div className="flex flex-wrap items-center gap-2">
-            <div className="flex flex-wrap gap-1 rounded-md border border-ink/10 bg-white p-1">
-                {RANGE_OPTIONS.map((opt) => (
-                    <button
-                        key={opt.value}
-                        onClick={() => onPresetChange(opt.value)}
-                        className={`rounded-[4px] px-2.5 py-1.5 text-xs font-medium transition-colors ${
-                            preset === opt.value
-                                ? "bg-crate text-white"
-                                : "text-ink/60 hover:text-ink"
-                        }`}
-                    >
-                        {opt.label}
-                    </button>
+        <div className="flex flex-col gap-1.5 sm:flex-row sm:flex-wrap sm:items-center">
+            <select
+                value={value}
+                onChange={(event) =>
+                    onChange(event.target.value as RangePreset)
+                }
+                className="w-full rounded-md border border-ink/15 bg-white px-2 py-1.5 text-xs text-ink outline-none focus:border-crate-light sm:w-auto"
+                aria-label="Revenue date range"
+            >
+                {RANGE_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>
+                        {option.label}
+                    </option>
                 ))}
-            </div>
-            {preset === "custom" && (
-                <div className="flex items-center gap-1.5">
+            </select>
+            {value === "custom" && (
+                <div className="grid grid-cols-2 gap-1.5 sm:flex sm:items-center">
+                    <span className="hidden text-xs text-black sm:inline">
+                        From
+                    </span>
                     <input
                         type="date"
                         value={customFrom}
-                        max={customTo || undefined}
-                        onChange={(e) =>
-                            onCustomChange(e.target.value, customTo)
+                        onChange={(event) =>
+                            onCustomFromChange(event.target.value)
                         }
-                        className="rounded-md border-2 border-ink/20 bg-white px-2 py-1.5 text-xs text-ink outline-none transition focus:border-crate"
+                        className="w-full min-w-0 rounded-md bg-white border border-ink/15 px-2 py-1.5 text-xs text-ink outline-none focus:border-crate-light"
+                        aria-label="Revenue start date"
                     />
-                    <span className="text-xs text-ink/40">to</span>
+                    <span className="hidden text-xs text-black sm:inline">
+                        To
+                    </span>
                     <input
                         type="date"
                         value={customTo}
-                        min={customFrom || undefined}
-                        onChange={(e) =>
-                            onCustomChange(customFrom, e.target.value)
+                        onChange={(event) =>
+                            onCustomToChange(event.target.value)
                         }
-                        className="rounded-md border-2 border-ink/20 bg-white px-2 py-1.5 text-xs text-ink outline-none transition focus:border-crate"
+                        className="w-full min-w-0 rounded-md  bg-white border border-ink/15 px-2 py-1.5 text-xs text-ink outline-none focus:border-crate-light"
+                        aria-label="Revenue end date"
                     />
                 </div>
             )}
@@ -142,16 +151,29 @@ function getErrorMessage(err: unknown, fallback: string) {
     return message ?? fallback;
 }
 
+function formatInputDate(value: string, fallback: string) {
+    if (!value) return fallback;
+    const [year, month, day] = value.split("-").map(Number);
+    return new Date(year, month - 1, day).toLocaleDateString("en-PH", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+    });
+}
+
+function DashboardSkeleton() {
+    return <PageSkeleton variant="dashboard" />;
+}
+
 export default function AdminDashboardPage() {
     const [stats, setStats] = useState<DashboardStats | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
-    const [preset, setPreset] = useState<RangePreset>("month");
-    const [customFrom, setCustomFrom] = useState(
-        toDateInputValue(new Date(Date.now() - 6 * 24 * 60 * 60 * 1000)),
-    );
-    const [customTo, setCustomTo] = useState(toDateInputValue(new Date()));
+    // Mirrors the manager dashboard's own filter state/defaults.
+    const [preset, setPreset] = useState<RangePreset>("today");
+    const [customFrom, setCustomFrom] = useState("");
+    const [customTo, setCustomTo] = useState("");
     const [summary, setSummary] = useState<RevenueSummary | null>(null);
     const [summaryLoading, setSummaryLoading] = useState(true);
     const [summaryError, setSummaryError] = useState<string | null>(null);
@@ -169,13 +191,15 @@ export default function AdminDashboardPage() {
     }, []);
 
     useEffect(() => {
-        if (!range) return;
         setSummaryLoading(true);
         setSummaryError(null);
         api.get("/dashboard/revenue-summary", {
             params: {
-                from: range.from.toISOString(),
-                to: range.to.toISOString(),
+                ...(range && {
+                    from: range.from.toISOString(),
+                    to: range.to.toISOString(),
+                }),
+                interval: preset === "today" ? "hour" : "day",
             },
         })
             .then(({ data }) => setSummary(data))
@@ -185,14 +209,10 @@ export default function AdminDashboardPage() {
                 ),
             )
             .finally(() => setSummaryLoading(false));
-    }, [range]);
+    }, [preset, range]);
 
     if (loading) {
-        return (
-            <div className="flex min-h-[60vh] items-center justify-center">
-                <div className="h-10 w-10 animate-spin rounded-full border-4 border-crate border-t-transparent" />
-            </div>
-        );
+        return <DashboardSkeleton />;
     }
 
     if (error || !stats) {
@@ -203,10 +223,18 @@ export default function AdminDashboardPage() {
         );
     }
 
-    const trendData = stats.revenueTrend.map((d) => ({
+    const trendData = (summary?.revenueTrend ?? []).map((d) => ({
         ...d,
-        label: formatShortDate(d.date),
+        label:
+            preset === "today"
+                ? `${Number(d.date.slice(-2)) % 12 || 12} ${Number(d.date.slice(-2)) < 12 ? "AM" : "PM"}`
+                : formatShortDate(d.date),
     }));
+    const rangeLabel =
+        preset === "custom"
+            ? `${formatInputDate(customFrom, "Start date")} to ${formatInputDate(customTo, "End date")}`
+            : (RANGE_OPTIONS.find((option) => option.value === preset)?.label ??
+              "Selected range");
 
     return (
         <div className="space-y-6">
@@ -219,19 +247,17 @@ export default function AdminDashboardPage() {
                 </p>
             </div>
 
-            <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-ink/10 bg-kraft/40 px-4 py-3">
-                <p className="text-xs font-medium uppercase tracking-wide text-ink/50">
-                    Date range for revenue &amp; top products
+            <div className="flex flex-wrap items-center justify-between gap-3">
+                <p className="text-xs text-ink/50">
+                    Revenue and top products for the selected period
                 </p>
-                <RevenueRangeFilter
-                    preset={preset}
-                    onPresetChange={setPreset}
+                <DateFilter
+                    value={preset}
+                    onChange={setPreset}
                     customFrom={customFrom}
                     customTo={customTo}
-                    onCustomChange={(from, to) => {
-                        setCustomFrom(from);
-                        setCustomTo(to);
-                    }}
+                    onCustomFromChange={setCustomFrom}
+                    onCustomToChange={setCustomTo}
                 />
             </div>
             {summaryError && (
@@ -244,25 +270,27 @@ export default function AdminDashboardPage() {
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
                 <StatCard
                     label="Total revenue"
-                    value={
-                        summaryLoading && !summary
-                            ? "…"
-                            : formatPrice(summary?.revenue.total ?? 0)
-                    }
+                    value={formatPrice(summary?.revenue.total ?? 0)}
                     icon={Wallet}
                     accent="crate"
+                    loading={summaryLoading}
                     footnote={`${summary?.revenue.totalOrders ?? 0} completed orders`}
                 />
                 <StatCard
-                    label="Orders (all time)"
+                    label="Orders"
                     value={String(
-                        stats.ordersByStatus.reduce((s, o) => s + o.count, 0),
+                        summary?.ordersByStatus.reduce(
+                            (s, o) => s + o.count,
+                            0,
+                        ) ?? 0,
                     )}
                     icon={ShoppingCart}
                     accent="signal"
+                    loading={summaryLoading}
                     footnote={`${
-                        stats.ordersByStatus.find((o) => o.status === "pending")
-                            ?.count ?? 0
+                        summary?.ordersByStatus.find(
+                            (o) => o.status === "pending",
+                        )?.count ?? 0
                     } pending`}
                 />
                 <StatCard
@@ -273,11 +301,12 @@ export default function AdminDashboardPage() {
                     footnote={`${stats.users.staff} staff accounts`}
                 />
                 <StatCard
-                    label="Products"
-                    value={String(stats.products.total)}
+                    label="Products sold"
+                    value={String(summary?.products.unitsSold ?? 0)}
                     icon={Package}
                     accent="crate"
-                    footnote={`${stats.products.totalCategories} categories`}
+                    loading={summaryLoading}
+                    footnote={`${summary?.products.distinctProducts ?? 0} distinct products`}
                 />
             </div>
 
@@ -307,81 +336,85 @@ export default function AdminDashboardPage() {
             <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
                 <div className="rounded-lg border border-black/5 bg-white p-5 shadow-sm lg:col-span-2">
                     <h2 className="font-display text-sm font-semibold text-ink">
-                        Revenue — last 14 days
+                        Revenue — {rangeLabel}
                     </h2>
-                    <div className="mt-4 h-64">
-                        <ResponsiveContainer width="100%" height="100%">
-                            <AreaChart
-                                data={trendData}
-                                margin={{
-                                    top: 5,
-                                    right: 10,
-                                    left: 0,
-                                    bottom: 0,
-                                }}
-                            >
-                                <defs>
-                                    <linearGradient
-                                        id="revenueFill"
-                                        x1="0"
-                                        y1="0"
-                                        x2="0"
-                                        y2="1"
-                                    >
-                                        <stop
-                                            offset="5%"
-                                            stopColor="#2f6b4f"
-                                            stopOpacity={0.35}
-                                        />
-                                        <stop
-                                            offset="95%"
-                                            stopColor="#2f6b4f"
-                                            stopOpacity={0}
-                                        />
-                                    </linearGradient>
-                                </defs>
-                                <CartesianGrid
-                                    strokeDasharray="3 3"
-                                    stroke="#1b2420"
-                                    strokeOpacity={0.08}
-                                    vertical={false}
-                                />
-                                <XAxis
-                                    dataKey="label"
-                                    tick={{ fontSize: 11, fill: "#1b2420" }}
-                                    axisLine={{
-                                        stroke: "#1b2420",
-                                        strokeOpacity: 0.1,
+                    {summaryLoading ? (
+                        <ChartSkeleton className="mt-4 h-64" />
+                    ) : (
+                        <div className="mt-4 h-64">
+                            <ResponsiveContainer width="100%" height="100%">
+                                <AreaChart
+                                    data={trendData}
+                                    margin={{
+                                        top: 5,
+                                        right: 10,
+                                        left: 0,
+                                        bottom: 0,
                                     }}
-                                    tickLine={false}
-                                />
-                                <YAxis
-                                    tick={{ fontSize: 11, fill: "#1b2420" }}
-                                    axisLine={false}
-                                    tickLine={false}
-                                    width={70}
-                                    tickFormatter={(v) => formatPrice(v)}
-                                />
-                                <Tooltip
-                                    formatter={(value) =>
-                                        formatPrice(Number(value))
-                                    }
-                                    contentStyle={{
-                                        borderRadius: 8,
-                                        border: "1px solid rgba(27,36,32,0.1)",
-                                        fontSize: 12,
-                                    }}
-                                />
-                                <Area
-                                    type="monotone"
-                                    dataKey="revenue"
-                                    stroke="#2f6b4f"
-                                    strokeWidth={2}
-                                    fill="url(#revenueFill)"
-                                />
-                            </AreaChart>
-                        </ResponsiveContainer>
-                    </div>
+                                >
+                                    <defs>
+                                        <linearGradient
+                                            id="revenueFill"
+                                            x1="0"
+                                            y1="0"
+                                            x2="0"
+                                            y2="1"
+                                        >
+                                            <stop
+                                                offset="5%"
+                                                stopColor="#2f6b4f"
+                                                stopOpacity={0.35}
+                                            />
+                                            <stop
+                                                offset="95%"
+                                                stopColor="#2f6b4f"
+                                                stopOpacity={0}
+                                            />
+                                        </linearGradient>
+                                    </defs>
+                                    <CartesianGrid
+                                        strokeDasharray="3 3"
+                                        stroke="#1b2420"
+                                        strokeOpacity={0.08}
+                                        vertical={false}
+                                    />
+                                    <XAxis
+                                        dataKey="label"
+                                        tick={{ fontSize: 11, fill: "#1b2420" }}
+                                        axisLine={{
+                                            stroke: "#1b2420",
+                                            strokeOpacity: 0.1,
+                                        }}
+                                        tickLine={false}
+                                    />
+                                    <YAxis
+                                        tick={{ fontSize: 11, fill: "#1b2420" }}
+                                        axisLine={false}
+                                        tickLine={false}
+                                        width={70}
+                                        tickFormatter={(v) => formatPrice(v)}
+                                    />
+                                    <Tooltip
+                                        formatter={(value) =>
+                                            formatPrice(Number(value))
+                                        }
+                                        contentStyle={{
+                                            borderRadius: 8,
+                                            border: "1px solid rgba(27,36,32,0.1)",
+                                            fontSize: 12,
+                                        }}
+                                    />
+                                    <Area
+                                        type="monotone"
+                                        dataKey="revenue"
+                                        stroke="#2f6b4f"
+                                        strokeWidth={2}
+                                        fill="url(#revenueFill)"
+                                    />
+                                </AreaChart>
+                            </ResponsiveContainer>
+                        </div>
+                    )}
                 </div>
 
                 <div className="rounded-lg border border-black/5 bg-white p-5 shadow-sm">
@@ -456,15 +489,22 @@ export default function AdminDashboardPage() {
                         <h2 className="font-display text-sm font-semibold text-ink">
                             Top products
                         </h2>
-                        {summaryLoading && (
-                            <Loader2 className="h-3.5 w-3.5 animate-spin text-ink/30" />
-                        )}
                     </div>
-                    {!summary || summary.topProducts.length === 0 ? (
+                    {summaryLoading ? (
+                        <ul className="mt-4 space-y-4" aria-hidden="true">
+                            {Array.from({ length: 5 }, (_, index) => (
+                                <li
+                                    key={index}
+                                    className="flex items-center justify-between gap-3"
+                                >
+                                    <Skeleton className="h-4 w-2/3" />
+                                    <Skeleton className="h-4 w-16" />
+                                </li>
+                            ))}
+                        </ul>
+                    ) : !summary || summary.topProducts.length === 0 ? (
                         <p className="mt-4 text-sm text-ink/50">
-                            {summaryLoading
-                                ? "Loading…"
-                                : "No sales in this date range."}
+                            No sales in this date range.
                         </p>
                     ) : (
                         <ul className="mt-4 space-y-3">

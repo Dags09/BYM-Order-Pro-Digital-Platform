@@ -5,7 +5,6 @@ import {
     Phone,
     Mail,
     Package,
-    Loader2,
     CheckCircle2,
     Truck,
     Radio,
@@ -17,6 +16,8 @@ import DestinationMap from "../../components/pageComponents/staff/destinationMap
 import type { Order } from "../../types/order";
 import { formatDateTime, formatPrice } from "../../utils/formatters";
 import { STATUS_COLORS, STATUS_LABELS } from "../../utils/constant";
+import { PageSkeleton } from "../../components/skeletonLoader";
+import { Skeleton } from "../../components/skeletonLoader";
 
 function getErrorMessage(err: unknown, fallback: string) {
     const message = (err as { response?: { data?: { message?: string } } })
@@ -79,11 +80,7 @@ export default function DeliveryDetailPage() {
     };
 
     if (loading) {
-        return (
-            <div className="flex min-h-[50vh] items-center justify-center">
-                <div className="h-10 w-10 animate-spin rounded-full border-4 border-crate border-t-transparent" />
-            </div>
-        );
+        return <PageSkeleton variant="detail" />;
     }
 
     if (error || !order) {
@@ -150,7 +147,7 @@ export default function DeliveryDetailPage() {
                         className="mt-4 flex w-full items-center justify-center gap-2 rounded-md bg-crate py-2.5 text-sm font-medium text-white transition-colors hover:bg-crate-dark disabled:opacity-50"
                     >
                         {updating ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
+                            <Skeleton className="h-4 w-4 rounded-full bg-white/50" />
                         ) : (
                             <Truck className="h-4 w-4" strokeWidth={1.75} />
                         )}
@@ -206,7 +203,7 @@ export default function DeliveryDetailPage() {
                             className="flex w-full items-center justify-center gap-2 rounded-md bg-crate py-2.5 text-sm font-medium text-white transition-colors hover:bg-crate-dark disabled:opacity-50"
                         >
                             {updating ? (
-                                <Loader2 className="h-4 w-4 animate-spin" />
+                                <Skeleton className="h-4 w-4 rounded-full bg-white/50" />
                             ) : (
                                 <CheckCircle2
                                     className="h-4 w-4"

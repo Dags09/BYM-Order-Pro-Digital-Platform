@@ -1,4 +1,5 @@
 import type { LucideIcon } from "lucide-react";
+import { Skeleton } from "../../skeletonLoader";
 
 interface StatCardProps {
     label: string;
@@ -6,6 +7,7 @@ interface StatCardProps {
     icon: LucideIcon;
     accent?: "crate" | "signal" | "route" | "ink";
     footnote?: string;
+    loading?: boolean;
 }
 
 const accentClasses: Record<NonNullable<StatCardProps["accent"]>, string> = {
@@ -21,6 +23,7 @@ export default function StatCard({
     icon: Icon,
     accent = "crate",
     footnote,
+    loading = false,
 }: StatCardProps) {
     return (
         <div className="rounded-lg border border-black/5 bg-white p-5 shadow-sm">
@@ -29,18 +32,26 @@ export default function StatCard({
                     <p className="text-xs font-medium uppercase tracking-wide text-[var(--color-ink)]/50">
                         {label}
                     </p>
-                    <p className="mt-2 font-[family-name:var(--font-mono)] text-2xl font-semibold text-[var(--color-ink)]">
-                        {value}
-                    </p>
+                    {loading ? (
+                        <Skeleton className="mt-2 h-7 w-24" />
+                    ) : (
+                        <p className="mt-2 font-[family-name:var(--font-mono)] text-2xl font-semibold text-[var(--color-ink)]">
+                            {value}
+                        </p>
+                    )}
                 </div>
                 <div className={`rounded-md p-2 ${accentClasses[accent]}`}>
                     <Icon className="h-5 w-5" strokeWidth={1.75} />
                 </div>
             </div>
-            {footnote && (
-                <p className="mt-3 text-xs text-[var(--color-ink)]/50">
-                    {footnote}
-                </p>
+            {loading ? (
+                <Skeleton className="mt-3 h-3 w-28" />
+            ) : (
+                footnote && (
+                    <p className="mt-3 text-xs text-[var(--color-ink)]/50">
+                        {footnote}
+                    </p>
+                )
             )}
         </div>
     );

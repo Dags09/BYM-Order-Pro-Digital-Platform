@@ -4,6 +4,7 @@ import api from "../../lib/axios";
 import type { Product } from "../../types/product";
 import type { Category } from "../../types/category";
 import { formatPrice, formatShortDate } from "../../utils/formatters";
+import { PageSkeleton } from "../../components/skeletonLoader";
 
 const LOW_STOCK_THRESHOLD = 10;
 
@@ -38,11 +39,7 @@ export default function AdminProductsPage() {
     });
 
     if (loading) {
-        return (
-            <div className="flex min-h-[50vh] items-center justify-center">
-                <div className="h-10 w-10 animate-spin rounded-full border-4 border-crate border-t-transparent" />
-            </div>
-        );
+        return <PageSkeleton variant="table" />;
     }
 
     if (error) {

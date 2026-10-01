@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Navigation2, ExternalLink, MapPin } from "lucide-react";
 import type { ShippingAddress } from "../../../types/order";
+import { Skeleton } from "../../skeletonLoader";
 
 interface DestinationMapProps {
     address: ShippingAddress;
@@ -84,11 +85,7 @@ export default function DestinationMap({ address }: DestinationMapProps) {
             </div>
 
             <div className="mt-3 overflow-hidden rounded-md border border-ink/10 bg-kraft">
-                {status === "loading" && (
-                    <div className="flex h-40 items-center justify-center text-sm text-ink/40">
-                        Locating address…
-                    </div>
-                )}
+                {status === "loading" && <Skeleton className="h-40 w-full" />}
                 {status === "error" && (
                     <div className="flex h-40 flex-col items-center justify-center gap-1 text-sm text-ink/40">
                         <MapPin className="h-5 w-5" strokeWidth={1.5} />

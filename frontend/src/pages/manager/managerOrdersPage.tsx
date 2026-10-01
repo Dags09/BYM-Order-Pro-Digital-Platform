@@ -17,6 +17,7 @@ import api from "../../lib/axios";
 import type { Order, OrderStatus } from "../../types/order";
 import { formatPrice, formatDateTime } from "../../utils/formatters";
 import { STATUS_COLORS, STATUS_LABELS } from "../../utils/constant";
+import { PageSkeleton } from "../../components/skeletonLoader";
 
 type FilterTab = "all" | OrderStatus;
 type ViewMode = "list" | "card";
@@ -247,11 +248,7 @@ export default function ManagerOrdersPage() {
     ]);
 
     if (loading) {
-        return (
-            <div className="flex min-h-[50vh] items-center justify-center">
-                <div className="h-10 w-10 animate-spin rounded-full border-4 border-crate border-t-transparent" />
-            </div>
-        );
+        return <PageSkeleton variant="table" />;
     }
 
     if (error) {

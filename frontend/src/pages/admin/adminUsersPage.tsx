@@ -1,15 +1,9 @@
 import { useEffect, useState, type FormEvent } from "react";
-import {
-    UserPlus,
-    ShieldCheck,
-    Truck,
-    ShoppingBag,
-    Power,
-    Loader2,
-} from "lucide-react";
+import { UserPlus, ShieldCheck, Truck, ShoppingBag, Power } from "lucide-react";
 import api from "../../lib/axios";
 import { formatShortDate } from "../../utils/formatters";
 import type { User } from "../../types/user";
+import { Skeleton, TableRowsSkeleton } from "../../components/skeletonLoader";
 
 const ROLE_OPTIONS = [
     { value: "manager", label: "Manager" },
@@ -274,7 +268,9 @@ export default function AdminUsersPage() {
                     disabled={submitting}
                     className="mt-4 flex items-center gap-2 rounded-md bg-[var(--color-crate-light)] px-4 py-2 text-sm font-medium text-white transition hover:opacity-90 disabled:opacity-60"
                 >
-                    {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
+                    {submitting && (
+                        <Skeleton className="h-4 w-4 rounded-full bg-white/50" />
+                    )}
                     Register account
                 </button>
             </form>
@@ -294,8 +290,8 @@ export default function AdminUsersPage() {
                 )}
 
                 {!loadError && users === null && (
-                    <div className="flex items-center justify-center py-10">
-                        <Loader2 className="h-6 w-6 animate-spin text-[var(--color-ink)]/30" />
+                    <div className="px-5 py-2">
+                        <TableRowsSkeleton rows={4} />
                     </div>
                 )}
 
@@ -386,7 +382,7 @@ export default function AdminUsersPage() {
                                                     className="inline-flex items-center gap-1.5 rounded-md border border-[var(--color-ink)]/15 px-2.5 py-1.5 text-xs font-medium text-[var(--color-ink)]/70 transition hover:bg-[var(--color-ink)]/5 disabled:opacity-50"
                                                 >
                                                     {togglingId === u._id ? (
-                                                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                                        <Skeleton className="h-3.5 w-3.5 rounded-full" />
                                                     ) : (
                                                         <Power className="h-3.5 w-3.5" />
                                                     )}

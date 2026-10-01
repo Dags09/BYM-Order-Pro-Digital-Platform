@@ -6,6 +6,7 @@ import api from "../../../../lib/axios";
 import useAuthStore from "../../../../store/authStore";
 import type { Product } from "../../../../types/product";
 import { formatPrice } from "../../../../utils/formatters";
+import { CardGridSkeleton } from "../../../skeletonLoader";
 
 export default function Products() {
     const [products, setProducts] = useState<Product[]>([]);
@@ -51,9 +52,7 @@ export default function Products() {
                 </div>
 
                 {loading ? (
-                    <p className="font-mono text-sm text-ink/50">
-                        Loading catalog...
-                    </p>
+                    <CardGridSkeleton count={6} />
                 ) : products.length === 0 ? (
                     <p className="font-mono text-sm text-ink/50">
                         No products available right now.

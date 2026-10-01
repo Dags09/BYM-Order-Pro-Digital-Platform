@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import api from "../../lib/axios";
 import { formatShortDate } from "../../utils/formatters";
+import { PageSkeleton } from "../../components/skeletonLoader";
 
 interface Driver {
     _id: string;
@@ -61,11 +62,7 @@ export default function ManagerDriversPage() {
     });
 
     if (loading) {
-        return (
-            <div className="flex min-h-[50vh] items-center justify-center">
-                <div className="h-10 w-10 animate-spin rounded-full border-4 border-crate border-t-transparent" />
-            </div>
-        );
+        return <PageSkeleton variant="table" />;
     }
 
     return (

@@ -10,6 +10,10 @@ import Footer from "../../components/pageComponents/customer/homePage/footer";
 import ProductCard from "../../components/pageComponents/customer/shopPage/productCard";
 import ProductListItem from "../../components/pageComponents/customer/shopPage/productListItem";
 import CategoryFilter from "../../components/pageComponents/customer/shopPage/categoryFilter";
+import {
+    CardGridSkeleton,
+    TableRowsSkeleton,
+} from "../../components/skeletonLoader";
 
 type ViewMode = "grid" | "list";
 const VIEW_MODE_STORAGE_KEY = "bym-shop-view";
@@ -152,9 +156,13 @@ export default function ShopPage() {
                     )}
 
                     {loading ? (
-                        <p className="font-mono text-sm text-ink/50">
-                            Loading catalog...
-                        </p>
+                        viewMode === "grid" ? (
+                            <CardGridSkeleton count={8} />
+                        ) : (
+                            <div className="overflow-hidden rounded-lg border-2 border-ink bg-white p-4">
+                                <TableRowsSkeleton rows={8} />
+                            </div>
+                        )
                     ) : error ? (
                         <p className="font-mono text-sm text-route">{error}</p>
                     ) : filteredProducts.length === 0 ? (
