@@ -152,6 +152,9 @@ function DateFilter({
             </select>
             {value === "custom" && (
                 <div className="grid grid-cols-2 gap-1.5 sm:flex sm:items-center">
+                    <span className="hidden text-xs text-[var(--color-ink)]/50 sm:block">
+                        From
+                    </span>
                     <input
                         type="date"
                         value={customFrom}
@@ -161,6 +164,9 @@ function DateFilter({
                         className="w-full min-w-0 rounded-md bg-white border border-[var(--color-ink)]/15 px-2 py-1.5 text-xs text-[var(--color-ink)] outline-none focus:border-[var(--color-crate-light)]"
                         aria-label="Chart start date"
                     />
+                    <span className="hidden text-xs text-[var(--color-ink)]/50 sm:block">
+                        To
+                    </span>
                     <input
                         type="date"
                         value={customTo}
