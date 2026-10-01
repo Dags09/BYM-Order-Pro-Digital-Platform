@@ -158,7 +158,7 @@ function DateFilter({
                         onChange={(event) =>
                             onCustomFromChange(event.target.value)
                         }
-                        className="w-full min-w-0 rounded-md border border-[var(--color-ink)]/15 px-2 py-1.5 text-xs text-[var(--color-ink)] outline-none focus:border-[var(--color-crate-light)]"
+                        className="w-full min-w-0 rounded-md bg-white border border-[var(--color-ink)]/15 px-2 py-1.5 text-xs text-[var(--color-ink)] outline-none focus:border-[var(--color-crate-light)]"
                         aria-label="Chart start date"
                     />
                     <input
@@ -167,7 +167,7 @@ function DateFilter({
                         onChange={(event) =>
                             onCustomToChange(event.target.value)
                         }
-                        className="w-full min-w-0 rounded-md border border-[var(--color-ink)]/15 px-2 py-1.5 text-xs text-[var(--color-ink)] outline-none focus:border-[var(--color-crate-light)]"
+                        className="w-full min-w-0 rounded-md bg-white border border-[var(--color-ink)]/15 px-2 py-1.5 text-xs text-[var(--color-ink)] outline-none focus:border-[var(--color-crate-light)]"
                         aria-label="Chart end date"
                     />
                 </div>

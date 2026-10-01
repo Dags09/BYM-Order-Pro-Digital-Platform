@@ -179,7 +179,7 @@ export default function ManagerCategoriesPage() {
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
                     placeholder="Search categories"
-                    className="w-full rounded-md border-2 border-ink/20 bg-kraft/40 py-2 pl-9 pr-3 text-sm text-ink outline-none transition focus:border-crate sm:w-72"
+                    className="w-full rounded-md border-2 bg-white border-ink/20 py-2 pl-9 pr-3 text-sm text-ink outline-none transition focus:border-crate sm:w-72"
                 />
             </div>
 
