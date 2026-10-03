@@ -24,10 +24,12 @@ the commented is pending
 
 1. in order details (manager) the payment evidence should shown
 
-2. in manager their should be a stat card for total product in it
+2. in manager their should be a stat card for total product in it //
 
-3. both manager and admin - when clicking the low stack stat card it will automatically redirect into products and shows low stack products
+3. their should a filter (Low Stock, Out of Stock, All) option for product page both manager and admin
 
-4. the manager should noy able to delete a product and category only archive (and when a product or category in archive it well not be shown on the list of manager and customer)
+4. both manager and admin - when clicking the low stack stat card it will automatically redirect into products and shows low stack products
 
-5. in admin, should able to see the archived products and category and who archived them
+5. the manager should noy able to delete a product and category only archive (and when a product or category in archive it well not be shown on the list of manager and customer)
+
+6. in admin, should able to see the archived products and category and who archived them

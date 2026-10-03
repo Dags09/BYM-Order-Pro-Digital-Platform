@@ -18,13 +18,18 @@ import {
     ChevronLeft,
     ChevronRight,
     ChevronDown,
+    SlidersHorizontal,
 } from "lucide-react";
+import { useSearchParams } from "react-router-dom";
 import api from "../../lib/axios";
 import type { Product } from "../../types/product";
 import type { Category } from "../../types/category";
 import { formatPrice } from "../../utils/formatters";
 import { PageSkeleton } from "../../components/skeletonLoader";
 import { Skeleton } from "../../components/skeletonLoader";
+import ManagerProductFilterModal, {
+    type StockFilter,
+} from "../../components/pageComponents/manager/managerProductFilterModal";
 
 const LOW_STOCK_THRESHOLD = 5;
 
@@ -44,33 +49,23 @@ const emptyForm = {
     category: "",
 };
 
-function getErrorMessage(err: unknown, fallback: string) {
-    const message = (err as { response?: { data?: { message?: string } } })
-        .response?.data?.message;
-    return message ?? fallback;
-}
-
-// A scrollable dropdown for category selection — caps its open list at a
-// fixed height so a long category list doesn't grow the page endlessly.
 function CategoryDropdown({
     categories,
     value,
     onChange,
     placeholder,
-    includeAllOption,
 }: {
     categories: Category[];
     value: string;
     onChange: (id: string) => void;
     placeholder: string;
-    includeAllOption?: boolean;
 }) {
     const [open, setOpen] = useState(false);
     const ref = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
-        const handleClickOutside = (e: MouseEvent) => {
-            if (ref.current && !ref.current.contains(e.target as Node)) {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (ref.current && !ref.current.contains(event.target as Node)) {
                 setOpen(false);
             }
         };
@@ -80,15 +75,14 @@ function CategoryDropdown({
     }, []);
 
     const selectedLabel =
-        value === "all"
-            ? "All categories"
-            : (categories.find((c) => c._id === value)?.name ?? placeholder);
+        categories.find((category) => category._id === value)?.name ??
+        placeholder;
 
     return (
         <div ref={ref} className="relative">
             <button
                 type="button"
-                onClick={() => setOpen((o) => !o)}
+                onClick={() => setOpen((isOpen) => !isOpen)}
                 className="flex w-full items-center justify-between gap-2 rounded-md border-2 border-ink/20 bg-white px-3 py-2 text-sm text-ink outline-none transition focus:border-crate"
             >
                 <span className={value ? "" : "text-ink/40"}>
@@ -101,42 +95,26 @@ function CategoryDropdown({
             </button>
             {open && (
                 <div className="absolute z-20 mt-1 max-h-56 w-full overflow-y-auto rounded-md border border-ink/10 bg-white py-1 shadow-lg">
-                    {includeAllOption && (
-                        <button
-                            type="button"
-                            onClick={() => {
-                                onChange("all");
-                                setOpen(false);
-                            }}
-                            className={`block w-full px-3 py-2 text-left text-sm transition-colors hover:bg-kraft/50 ${
-                                value === "all"
-                                    ? "bg-crate/10 font-medium text-crate"
-                                    : "text-ink"
-                            }`}
-                        >
-                            All categories
-                        </button>
-                    )}
                     {categories.length === 0 ? (
                         <p className="px-3 py-2 text-sm text-ink/40">
                             No categories yet.
                         </p>
                     ) : (
-                        categories.map((c) => (
+                        categories.map((category) => (
                             <button
-                                key={c._id}
+                                key={category._id}
                                 type="button"
                                 onClick={() => {
-                                    onChange(c._id);
+                                    onChange(category._id);
                                     setOpen(false);
                                 }}
                                 className={`block w-full px-3 py-2 text-left text-sm transition-colors hover:bg-kraft/50 ${
-                                    value === c._id
+                                    value === category._id
                                         ? "bg-crate/10 font-medium text-crate"
                                         : "text-ink"
                                 }`}
                             >
-                                {c.name}
+                                {category.name}
                             </button>
                         ))
                     )}
@@ -146,14 +124,30 @@ function CategoryDropdown({
     );
 }
 
+function getErrorMessage(err: unknown, fallback: string) {
+    const message = (err as { response?: { data?: { message?: string } } })
+        .response?.data?.message;
+    return message ?? fallback;
+}
+
 export default function ManagerProductsPage() {
+    const [searchParams] = useSearchParams();
+    const initialStockFilter = searchParams.get("stock");
     const [products, setProducts] = useState<Product[]>([]);
     const [categories, setCategories] = useState<Category[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
     const [search, setSearch] = useState("");
-    const [categoryFilter, setCategoryFilter] = useState("all");
+    const [categoryFilter, setCategoryFilter] = useState<string[]>(["all"]);
+    const [stockFilter, setStockFilter] = useState<StockFilter>(() =>
+        initialStockFilter === "low-stock" ||
+        initialStockFilter === "out-of-stock" ||
+        initialStockFilter === "in-stock"
+            ? initialStockFilter
+            : "all",
+    );
+    const [showFilterModal, setShowFilterModal] = useState(false);
     const [viewMode, setViewMode] = useState<ViewMode>("card");
     const [currentPage, setCurrentPage] = useState(1);
 
@@ -199,12 +193,21 @@ export default function ManagerProductsPage() {
         const matchesSearch = search.trim()
             ? p.name.toLowerCase().includes(search.trim().toLowerCase())
             : true;
+        const productCategoryId =
+            typeof p.category === "object" ? p.category?._id : p.category;
         const matchesCategory =
-            categoryFilter === "all" ||
-            (typeof p.category === "object"
-                ? p.category?._id === categoryFilter
-                : p.category === categoryFilter);
-        return matchesSearch && matchesCategory;
+            categoryFilter.includes("all") ||
+            categoryFilter.length === 0 ||
+            (productCategoryId !== undefined &&
+                categoryFilter.includes(productCategoryId));
+        const matchesStock =
+            stockFilter === "all" ||
+            (stockFilter === "out-of-stock" && p.stock === 0) ||
+            (stockFilter === "low-stock" &&
+                p.stock > 0 &&
+                p.stock <= LOW_STOCK_THRESHOLD) ||
+            (stockFilter === "in-stock" && p.stock > LOW_STOCK_THRESHOLD);
+        return matchesSearch && matchesCategory && matchesStock;
     });
 
     const pageSize = viewMode === "list" ? LIST_PAGE_SIZE : CARD_PAGE_SIZE;
@@ -221,7 +224,7 @@ export default function ManagerProductsPage() {
     // Reset to page 1 whenever the result set or the page size changes.
     useEffect(() => {
         setCurrentPage(1);
-    }, [search, categoryFilter, viewMode]);
+    }, [search, categoryFilter, stockFilter, viewMode]);
 
     // ---- Create / edit form ----
 
@@ -389,15 +392,29 @@ export default function ManagerProductsPage() {
                             className="w-full rounded-md border-2 border-ink/20 bg-white py-2 pl-9 pr-3 text-sm text-ink outline-none transition focus:border-crate sm:w-64"
                         />
                     </div>
-                    <div className="sm:w-56">
-                        <CategoryDropdown
-                            categories={categories}
-                            value={categoryFilter}
-                            onChange={setCategoryFilter}
-                            placeholder="All categories"
-                            includeAllOption
+                    <button
+                        type="button"
+                        onClick={() => setShowFilterModal(true)}
+                        aria-haspopup="dialog"
+                        aria-expanded={showFilterModal}
+                        className={`relative flex items-center gap-1.5 rounded-md border px-3 py-2 text-sm font-medium transition-colors ${
+                            showFilterModal
+                                ? "border-crate bg-crate text-white"
+                                : "border-ink/20 bg-white text-ink/70 hover:text-ink"
+                        }`}
+                    >
+                        <SlidersHorizontal
+                            className="h-4 w-4"
+                            strokeWidth={1.75}
                         />
-                    </div>
+                        Filter
+                        {(!categoryFilter.includes("all") &&
+                            categoryFilter.length > 0 ||
+                            stockFilter !== "all") &&
+                            !showFilterModal && (
+                                <span className="absolute -right-1 -top-1 h-2.5 w-2.5 rounded-full bg-signal" />
+                            )}
+                    </button>
                 </div>
 
                 {/* View switcher */}
@@ -671,6 +688,20 @@ export default function ManagerProductsPage() {
                         </button>
                     </div>
                 </div>
+            )}
+
+            {showFilterModal && (
+                <ManagerProductFilterModal
+                    categories={categories}
+                    categoryFilter={categoryFilter}
+                    stockFilter={stockFilter}
+                    onApply={(categories, stock) => {
+                        setCategoryFilter(categories);
+                        setStockFilter(stock);
+                        setShowFilterModal(false);
+                    }}
+                    onClose={() => setShowFilterModal(false)}
+                />
             )}
 
             {/* Create / edit modal */}

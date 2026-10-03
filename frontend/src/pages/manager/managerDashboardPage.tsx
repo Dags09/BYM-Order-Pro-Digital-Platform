@@ -1,5 +1,5 @@
 import { useEffect, useState, type ReactNode } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import {
     BarChart,
     Bar,
@@ -90,6 +90,12 @@ const STOCK_COLORS = {
     healthy: "#3f8563",
 };
 
+const STOCK_FILTERS_BY_LABEL: Record<string, string> = {
+    "Out of stock": "out-of-stock",
+    "Low stock": "low-stock",
+    "In stock": "in-stock",
+};
+
 // Used as the lower bound for "All time" so every record passes the
 // isInDateRange check regardless of how old it is.
 const EPOCH = new Date(0);
@@ -97,21 +103,35 @@ const EPOCH = new Date(0);
 function ChartCard({
     title,
     subtitle,
+    total,
+    loading,
     children,
 }: {
     title: string;
     subtitle: string;
+    total: number;
+    loading: boolean;
     children: ReactNode;
 }) {
     return (
         <div className="rounded-lg border border-[var(--color-ink)]/10 bg-white p-5">
-            <div>
-                <p className="font-[family-name:var(--font-display)] text-sm font-semibold text-[var(--color-ink)]">
-                    {title}
-                </p>
-                <p className="mt-0.5 text-xs text-[var(--color-ink)]/50">
-                    {subtitle}
-                </p>
+            <div className="flex items-start justify-between gap-3">
+                <div>
+                    <p className="font-[family-name:var(--font-display)] text-sm font-semibold text-[var(--color-ink)]">
+                        {title}
+                    </p>
+                    <p className="mt-0.5 text-xs text-[var(--color-ink)]/50">
+                        {subtitle}
+                    </p>
+                </div>
+                <div className="shrink-0 text-right">
+                    <p className="text-[10px] font-medium uppercase tracking-wide text-ink/45">
+                        Total
+                    </p>
+                    <p className="font-mono text-lg font-semibold leading-tight text-ink">
+                        {loading ? "—" : total}
+                    </p>
+                </div>
             </div>
 
             <div className="mt-4 h-56">{children}</div>
@@ -225,6 +245,7 @@ function isInDateRange(value: string | undefined, range: DateRange): boolean {
 }
 
 export default function ManagerDashboardPage() {
+    const navigate = useNavigate();
     const { user } = useAuthStore();
     const [orders, setOrders] = useState<Order[] | null>(null);
     const [products, setProducts] = useState<Product[] | null>(null);
@@ -379,8 +400,12 @@ export default function ManagerDashboardPage() {
 
                     <div className="mt-3 grid grid-cols-1 gap-4 lg:grid-cols-3">
                         <ChartCard
-                            title="Orders by status"
+                            title="Orders"
                             subtitle="All orders, current status"
+                            total={orderStatusData
+                                .filter((item) => item.status !== "cancelled")
+                                .reduce((sum, item) => sum + item.count, 0)}
+                            loading={chartsLoading}
                         >
                             {chartsLoading ? (
                                 <ChartSkeleton />
@@ -409,6 +434,18 @@ export default function ManagerDashboardPage() {
                                         <Bar
                                             dataKey="count"
                                             radius={[4, 4, 0, 0]}
+                                            cursor="pointer"
+                                            onClick={(entry) => {
+                                                const status = entry.payload
+                                                    ?.status as
+                                                    | OrderStatus
+                                                    | undefined;
+                                                if (status) {
+                                                    navigate(
+                                                        `/manager/orders?status=${status}`,
+                                                    );
+                                                }
+                                            }}
                                         >
                                             {orderStatusData.map((d) => (
                                                 <Cell
@@ -425,6 +462,11 @@ export default function ManagerDashboardPage() {
                         <ChartCard
                             title="Product stock"
                             subtitle="Products added in the selected period"
+                            total={stockData.reduce(
+                                (sum, item) => sum + item.count,
+                                0,
+                            )}
+                            loading={chartsLoading}
                         >
                             {chartsLoading ? (
                                 <ChartSkeleton />
@@ -449,6 +491,23 @@ export default function ManagerDashboardPage() {
                                         <Bar
                                             dataKey="count"
                                             radius={[4, 4, 0, 0]}
+                                            cursor="pointer"
+                                            onClick={(entry) => {
+                                                const label = entry.payload
+                                                    ?.label as
+                                                    | string
+                                                    | undefined;
+                                                const stockFilter = label
+                                                    ? STOCK_FILTERS_BY_LABEL[
+                                                          label
+                                                      ]
+                                                    : undefined;
+                                                if (stockFilter) {
+                                                    navigate(
+                                                        `/manager/products?stock=${stockFilter}`,
+                                                    );
+                                                }
+                                            }}
                                         >
                                             {stockData.map((d) => (
                                                 <Cell
@@ -465,6 +524,11 @@ export default function ManagerDashboardPage() {
                         <ChartCard
                             title="Deliveries in progress"
                             subtitle="Orders with a driver assigned"
+                            total={deliveryStatusData.reduce(
+                                (sum, item) => sum + item.count,
+                                0,
+                            )}
+                            loading={chartsLoading}
                         >
                             {chartsLoading ? (
                                 <ChartSkeleton />
@@ -493,6 +557,18 @@ export default function ManagerDashboardPage() {
                                         <Bar
                                             dataKey="count"
                                             radius={[4, 4, 0, 0]}
+                                            cursor="pointer"
+                                            onClick={(entry) => {
+                                                const status = entry.payload
+                                                    ?.status as
+                                                    | OrderStatus
+                                                    | undefined;
+                                                if (status) {
+                                                    navigate(
+                                                        `/manager/orders?status=${status}&assigned=1`,
+                                                    );
+                                                }
+                                            }}
                                         >
                                             {deliveryStatusData.map((d) => (
                                                 <Cell

@@ -138,7 +138,7 @@ export default function ShopPage() {
                                 >
                                     <ListIcon className="h-3.5 w-3.5" />
                                     <span className="hidden sm:inline">
-                                        Table
+                                        List
                                     </span>
                                 </button>
                             </div>

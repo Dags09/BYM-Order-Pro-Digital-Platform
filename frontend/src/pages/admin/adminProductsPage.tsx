@@ -7,6 +7,7 @@ import { formatPrice, formatShortDate } from "../../utils/formatters";
 import { PageSkeleton } from "../../components/skeletonLoader";
 
 const LOW_STOCK_THRESHOLD = 10;
+type StockFilter = "all" | "low-stock" | "out-of-stock";
 
 export default function AdminProductsPage() {
     const [products, setProducts] = useState<Product[]>([]);
@@ -15,6 +16,7 @@ export default function AdminProductsPage() {
     const [error, setError] = useState<string | null>(null);
     const [search, setSearch] = useState("");
     const [categoryFilter, setCategoryFilter] = useState("all");
+    const [stockFilter, setStockFilter] = useState<StockFilter>("all");
 
     useEffect(() => {
         Promise.all([
@@ -35,7 +37,12 @@ export default function AdminProductsPage() {
             : true;
         const matchesCategory =
             categoryFilter === "all" || p.category?._id === categoryFilter;
-        return matchesSearch && matchesCategory;
+        const matchesStock =
+            stockFilter === "all" ||
+            (stockFilter === "out-of-stock"
+                ? p.stock === 0
+                : p.stock > 0 && p.stock < LOW_STOCK_THRESHOLD);
+        return matchesSearch && matchesCategory && matchesStock;
     });
 
     if (loading) {
@@ -75,18 +82,32 @@ export default function AdminProductsPage() {
                         className="w-full rounded-md border-2 border-ink/20 bg-white py-2 pl-9 pr-3 text-sm text-ink outline-none transition focus:border-crate sm:w-72"
                     />
                 </div>
-                <select
-                    value={categoryFilter}
-                    onChange={(e) => setCategoryFilter(e.target.value)}
-                    className="rounded-md border-2 border-ink/20 bg-white px-3 py-2 text-sm text-ink outline-none transition focus:border-crate"
-                >
-                    <option value="all">All categories</option>
-                    {categories.map((c) => (
-                        <option key={c._id} value={c._id}>
-                            {c.name}
-                        </option>
-                    ))}
-                </select>
+                <div className="flex flex-col gap-3 sm:flex-row">
+                    <select
+                        value={categoryFilter}
+                        onChange={(e) => setCategoryFilter(e.target.value)}
+                        className="rounded-md border-2 border-ink/20 bg-white px-3 py-2 text-sm text-ink outline-none transition focus:border-crate"
+                    >
+                        <option value="all">All categories</option>
+                        {categories.map((c) => (
+                            <option key={c._id} value={c._id}>
+                                {c.name}
+                            </option>
+                        ))}
+                    </select>
+                    <select
+                        value={stockFilter}
+                        onChange={(e) =>
+                            setStockFilter(e.target.value as StockFilter)
+                        }
+                        aria-label="Filter by stock status"
+                        className="rounded-md border-2 border-ink/20 bg-white px-3 py-2 text-sm text-ink outline-none transition focus:border-crate"
+                    >
+                        <option value="all">All</option>
+                        <option value="low-stock">Low stock</option>
+                        <option value="out-of-stock">Out of stock</option>
+                    </select>
+                </div>
             </div>
 
             {filtered.length === 0 ? (

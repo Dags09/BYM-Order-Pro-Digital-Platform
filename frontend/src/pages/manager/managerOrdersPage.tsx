@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import {
     MapPin,
     Package,
@@ -93,10 +93,18 @@ function isoWeekToRange(weekValue: string): { start: Date; end: Date } | null {
 
 export default function ManagerOrdersPage() {
     const navigate = useNavigate();
+    const [searchParams] = useSearchParams();
+    const requestedStatus = searchParams.get("status");
+    const requestedAssigned = searchParams.get("assigned") === "1";
     const [orders, setOrders] = useState<Order[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-    const [tab, setTab] = useState<FilterTab>("all");
+    const [tab, setTab] = useState<FilterTab>(() =>
+        TABS.includes(requestedStatus as FilterTab)
+            ? (requestedStatus as FilterTab)
+            : "all",
+    );
+    const [assignedOnly, setAssignedOnly] = useState(requestedAssigned);
     const [search, setSearch] = useState("");
     const [dateMode, setDateMode] = useState<DateMode>("all");
     const [dateDay, setDateDay] = useState("");
@@ -124,6 +132,7 @@ export default function ManagerOrdersPage() {
 
     const filtered = orders
         .filter((o) => tab === "all" || o.status === tab)
+        .filter((o) => !assignedOnly || Boolean(o.driver))
         .filter((o) => {
             if (!search.trim()) return true;
             const q = search.trim().toLowerCase();
@@ -235,6 +244,7 @@ export default function ManagerOrdersPage() {
         setCurrentPage(1);
     }, [
         tab,
+        assignedOnly,
         search,
         dateMode,
         dateDay,
@@ -325,6 +335,16 @@ export default function ManagerOrdersPage() {
                     </button>
                 </div>
             </div>
+            {assignedOnly && (
+                <button
+                    type="button"
+                    onClick={() => setAssignedOnly(false)}
+                    className="inline-flex items-center gap-2 rounded-full bg-crate/10 px-3 py-1.5 text-xs font-medium text-crate transition-colors hover:bg-crate/15"
+                >
+                    Assigned to a driver
+                    <X className="h-3.5 w-3.5" />
+                </button>
+            )}
 
             {/* Date filter + view switcher, side by side */}
             <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">

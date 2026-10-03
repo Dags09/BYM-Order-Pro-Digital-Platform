@@ -12,7 +12,11 @@ export default function navBar() {
 
     const baseNavLinks: navLink[] = [
         { name: "Home", path: "#home" },
-        { name: "Products", path: "#products" },
+        {
+            name: "Products",
+            path: "#products",
+            children: [{ name: "Shop", path: "/shop" }],
+        },
         { name: "About Us", path: "#about" },
         { name: "Contact", path: "#contact" },
     ];
