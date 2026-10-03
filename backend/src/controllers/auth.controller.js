@@ -6,6 +6,7 @@ import {
     sendPasswordResetEmail,
     sendAccountEmail,
     sendAccountStatusEmail,
+    generateSecurePassword,
 } from "../service/emailStaff.service.js";
 
 const generateRandomHexColor = () => {
@@ -97,8 +98,6 @@ export const login = async (req, res) => {
 
         // if (
         //     user.role !== "admin" &&
-        //     user.role !== "customer" &&
-        //      user.role !== "manager" &&
         //     !user.emailVerified
         // ) {
         //     return res.status(401).json({
@@ -165,22 +164,14 @@ export const login = async (req, res) => {
 // Register (Admin only)
 export const registerStaff = async (req, res) => {
     try {
-        const {
-            username,
-            email,
-            phoneNumber,
-            password,
-            firstName,
-            lastName,
-            role,
-        } = req.body;
+        const { username, email, phoneNumber, firstName, lastName, role } =
+            req.body;
 
         // Validate required fields
         if (
             !username ||
             !email ||
             !phoneNumber ||
-            !password ||
             !firstName ||
             !lastName ||
             !role
@@ -188,22 +179,6 @@ export const registerStaff = async (req, res) => {
             return res.status(400).json({
                 success: false,
                 message: "All fields are required.",
-            });
-        }
-
-        // Validate password length
-        if (password.length < 8) {
-            return res.status(400).json({
-                success: false,
-                message: "Password must be at least 8 characters.",
-            });
-        }
-
-        // Validate password complexity (at least 3 numbers)
-        if (!(password.match(/\d/g)?.length >= 3)) {
-            return res.status(400).json({
-                success: false,
-                message: "Password must contain at least 3 numbers.",
             });
         }
 
@@ -264,6 +239,7 @@ export const registerStaff = async (req, res) => {
 
         // Generate token first
         const verificationToken = generatePasswordResetToken();
+        const password = generateSecurePassword();
 
         // Try sending email BEFORE saving user, using req.body values directly
         const emailSent = await sendAccountEmail(

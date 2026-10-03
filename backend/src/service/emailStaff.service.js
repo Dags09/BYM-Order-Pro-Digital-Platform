@@ -1,5 +1,5 @@
 import nodemailer from "nodemailer";
-import { randomBytes } from "crypto";
+import { randomBytes, randomInt } from "crypto";
 import { ENV } from "../config/env.js";
 
 // Create transporter
@@ -17,14 +17,24 @@ const createTransporter = () =>
 
 export const generateSecurePassword = (length = 12) => {
     const charset =
-        "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*";
-    const result = [];
-    while (result.length < length) {
+        "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!@#$%^*";
+    const passwordLength = Math.max(12, Math.floor(length));
+    const result = Array.from({ length: 3 }, () =>
+        String(randomInt(10)),
+    );
+
+    while (result.length < passwordLength) {
         const byte = randomBytes(1)[0];
         if (byte < Math.floor(256 / charset.length) * charset.length)
             result.push(charset[byte % charset.length]);
     }
-    return result.join("");
+
+    for (let index = result.length - 1; index > 0; index -= 1) {
+        const swapIndex = randomInt(index + 1);
+        [result[index], result[swapIndex]] = [result[swapIndex], result[index]];
+    }
+
+    return result.slice(0, passwordLength).join("");
 };
 
 //----------------------------
@@ -203,13 +213,15 @@ export const sendAccountEmail = async (userData, verificationToken) => {
                 ["Full Name:", ` ${userData.firstName} ${userData.lastName}`],
                 ["Email: ", userData.email],
                 ["Phone Number: ", userData.phoneNumber],
-                ["Role: ", userData.role],
+                ["Password: ", userData.password],
+                [("Role: ", userData.role)],
             ])}
             <div class="card verify-card">
                 <p class="card-title">✅ Next Step: Verify Your Email</p>
                 <p>To complete your account setup, please verify your email address:</p>
                 ${ctaButton(verificationUrl, "Verify Email Address")}
             </div>
+            <div class="warn-banner">⚠️ After verifying your account, you can now change the password of your account.</div>
             <div class="warn-banner">⚠️ Keep your password secure and do not share it with anyone.</div>
             <p style="margin:32px 0 0 0; color:#64748b; font-size:16px; line-height:1.6;">
                 If you have any questions, please contact the system administrator.

@@ -8,6 +8,7 @@ import { formatPrice } from "../../../../utils/formatters";
 import NavBar from "../homePage/navBar";
 import Footer from "../homePage/footer";
 import { Skeleton } from "../../../skeletonLoader";
+import { CheckoutQrSkeleton } from "../customerSkeletons";
 
 import type { QRCodeEntry } from "../../../../types/qrcode";
 import type {
@@ -45,6 +46,7 @@ export default function CheckoutPage() {
     const [paymentReference, setPaymentReference] = useState("");
 
     const [qrcodes, setQrcodes] = useState<QRCodeEntry[]>([]);
+    const [qrcodesLoading, setQrcodesLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
     const [receipt, setReceipt] = useState<Receipt | null>(null);
@@ -53,7 +55,8 @@ export default function CheckoutPage() {
     useEffect(() => {
         api.get("/qrcode")
             .then(({ data }) => setQrcodes(data.qrcodes ?? []))
-            .catch((err) => console.error("Failed to load QR codes:", err));
+            .catch((err) => console.error("Failed to load QR codes:", err))
+            .finally(() => setQrcodesLoading(false));
     }, []);
 
     const activeQr = useMemo(
@@ -217,7 +220,9 @@ export default function CheckoutPage() {
                                                     Scan to pay
                                                 </div>
 
-                                                {activeQr ? (
+                                                {qrcodesLoading ? (
+                                                    <CheckoutQrSkeleton />
+                                                ) : activeQr ? (
                                                     <div className="mt-3 flex items-start gap-4">
                                                         <button
                                                             type="button"

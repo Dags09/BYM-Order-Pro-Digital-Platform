@@ -13,7 +13,7 @@ import {
 import { Package, Tags, ClipboardList, Truck } from "lucide-react";
 import useAuthStore from "../../store/authStore";
 import api from "../../lib/axios";
-import { ChartSkeleton } from "../../components/skeletonLoader";
+import { ManagerDashboardChartSkeleton } from "../../components/pageComponents/manager/managerSkeletons";
 import type { Order, OrderStatus } from "../../types/order";
 import type { Product } from "../../types/product";
 import { STATUS_COLORS, STATUS_LABELS } from "../../utils/constant";
@@ -408,7 +408,7 @@ export default function ManagerDashboardPage() {
                             loading={chartsLoading}
                         >
                             {chartsLoading ? (
-                                <ChartSkeleton />
+                                <ManagerDashboardChartSkeleton />
                             ) : (
                                 <ResponsiveContainer width="100%" height="100%">
                                     <BarChart data={orderStatusData}>
@@ -469,7 +469,7 @@ export default function ManagerDashboardPage() {
                             loading={chartsLoading}
                         >
                             {chartsLoading ? (
-                                <ChartSkeleton />
+                                <ManagerDashboardChartSkeleton />
                             ) : (
                                 <ResponsiveContainer width="100%" height="100%">
                                     <BarChart data={stockData}>
@@ -531,7 +531,7 @@ export default function ManagerDashboardPage() {
                             loading={chartsLoading}
                         >
                             {chartsLoading ? (
-                                <ChartSkeleton />
+                                <ManagerDashboardChartSkeleton />
                             ) : (
                                 <ResponsiveContainer width="100%" height="100%">
                                     <BarChart data={deliveryStatusData}>

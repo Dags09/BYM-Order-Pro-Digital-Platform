@@ -12,8 +12,8 @@ import api from "../../lib/axios";
 import type { Order, OrderStatus } from "../../types/order";
 import { formatPrice, formatDateTime } from "../../utils/formatters";
 import { STATUS_COLORS, STATUS_LABELS } from "../../utils/constant";
-import { PageSkeleton } from "../../components/skeletonLoader";
 import { Skeleton } from "../../components/skeletonLoader";
+import { ManagerOrderDetailSkeleton } from "../../components/pageComponents/manager/managerSkeletons";
 
 interface DriverOption {
     _id: string;
@@ -126,7 +126,7 @@ export default function ManagerOrderDetailPage() {
     };
 
     if (loading) {
-        return <PageSkeleton variant="detail" />;
+        return <ManagerOrderDetailSkeleton />;
     }
 
     if (error || !order) {

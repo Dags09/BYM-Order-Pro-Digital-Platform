@@ -1,11 +1,11 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { Search, ChevronRight, Truck } from "lucide-react";
 import api from "../../lib/axios";
 import type { Order, OrderStatus } from "../../types/order";
 import { formatDateTime, formatPrice } from "../../utils/formatters";
 import { STATUS_COLORS, STATUS_LABELS } from "../../utils/constant";
-import { PageSkeleton } from "../../components/skeletonLoader";
+import { AdminOrdersSkeleton } from "../../components/pageComponents/admin/adminPageSkeletons";
 
 type FilterTab = "all" | OrderStatus;
 
@@ -26,10 +26,16 @@ function getErrorMessage(err: unknown, fallback: string) {
 
 export default function AdminOrdersPage() {
     const navigate = useNavigate();
+    const [searchParams] = useSearchParams();
+    const requestedStatus = searchParams.get("status");
     const [orders, setOrders] = useState<Order[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-    const [tab, setTab] = useState<FilterTab>("all");
+    const [tab, setTab] = useState<FilterTab>(() =>
+        TABS.includes(requestedStatus as FilterTab)
+            ? (requestedStatus as FilterTab)
+            : "all",
+    );
     const [search, setSearch] = useState("");
 
     useEffect(() => {
@@ -63,7 +69,7 @@ export default function AdminOrdersPage() {
         );
 
     if (loading) {
-        return <PageSkeleton variant="table" />;
+        return <AdminOrdersSkeleton />;
     }
 
     if (error) {

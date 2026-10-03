@@ -2,8 +2,8 @@ import { useEffect, useState } from "react";
 import { Star, MessageSquare, Search, Trash2 } from "lucide-react";
 import api from "../../lib/axios";
 import { formatDateTime } from "../../utils/formatters";
-import { PageSkeleton } from "../../components/skeletonLoader";
 import { Skeleton } from "../../components/skeletonLoader";
+import { AdminFeedbackSkeleton } from "../../components/pageComponents/admin/adminPageSkeletons";
 
 interface FeedbackEntry {
     _id: string;
@@ -111,7 +111,7 @@ export default function AdminFeedbackPage() {
     };
 
     if (loading) {
-        return <PageSkeleton variant="table" />;
+        return <AdminFeedbackSkeleton />;
     }
 
     if (error) {

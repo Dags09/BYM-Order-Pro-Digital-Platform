@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
     AreaChart,
     Area,
@@ -11,24 +12,30 @@ import {
     ResponsiveContainer,
     Cell,
 } from "recharts";
-import {
-    Wallet,
-    ShoppingCart,
-    Users,
-    Package,
-    AlertTriangle,
-    Star,
-} from "lucide-react";
+import { Wallet, ShoppingCart, Users, Package, Star } from "lucide-react";
 import api from "../../lib/axios";
 import StatCard from "../../components/pageComponents/admin/statCard";
-import {
-    ChartSkeleton,
-    PageSkeleton,
-    Skeleton,
-} from "../../components/skeletonLoader";
+import { ChartSkeleton, Skeleton } from "../../components/skeletonLoader";
+import { AdminDashboardSkeleton } from "../../components/pageComponents/admin/adminPageSkeletons";
 import { formatPrice, formatShortDate } from "../../utils/formatters";
 import type { DashboardStats, RevenueSummary } from "../../types/dashboard";
+import type { Product } from "../../types/product";
 import { STATUS_COLORS, STATUS_LABELS } from "../../utils/constant";
+
+const LOW_STOCK_THRESHOLD = 10;
+
+const STOCK_COLORS = {
+    out: "#c1443d",
+    low: "#f0b429",
+    healthy: "#3f8563",
+};
+
+// Bars that jump to a pre-filtered products page when clicked.
+const STOCK_FILTERS_BY_LABEL: Record<string, string> = {
+    "Out of stock": "out-of-stock",
+    "Low stock": "low-stock",
+    "In stock": "in-stock",
+};
 
 type RangePreset = "all" | "today" | "week" | "month" | "year" | "custom";
 
@@ -162,10 +169,12 @@ function formatInputDate(value: string, fallback: string) {
 }
 
 function DashboardSkeleton() {
-    return <PageSkeleton variant="dashboard" />;
+    return <AdminDashboardSkeleton />;
 }
 
 export default function AdminDashboardPage() {
+    const navigate = useNavigate();
+    const [products, setProducts] = useState<Product[] | null>(null);
     const [stats, setStats] = useState<DashboardStats | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -188,6 +197,12 @@ export default function AdminDashboardPage() {
             .then(({ data }) => setStats(data.stats))
             .catch(() => setError("Couldn't load dashboard stats."))
             .finally(() => setLoading(false));
+    }, []);
+
+    useEffect(() => {
+        api.get("/product/get-all-products")
+            .then(({ data }) => setProducts(data))
+            .catch(() => setProducts([]));
     }, []);
 
     useEffect(() => {
@@ -230,6 +245,35 @@ export default function AdminDashboardPage() {
                 ? `${Number(d.date.slice(-2)) % 12 || 12} ${Number(d.date.slice(-2)) < 12 ? "AM" : "PM"}`
                 : formatShortDate(d.date),
     }));
+    // Same behavior as the manager dashboard: products added in the period.
+    const productsForStock = (products ?? []).filter((product) => {
+        if (!range) return true;
+        if (!product.createdAt) return false;
+        const date = new Date(product.createdAt);
+        return date >= range.from && date <= range.to;
+    });
+    const stockData = [
+        {
+            label: "Out of stock",
+            count: productsForStock.filter((p) => p.stock === 0).length,
+            color: STOCK_COLORS.out,
+        },
+        {
+            label: "Low stock",
+            count: productsForStock.filter(
+                (p) => p.stock > 0 && p.stock < LOW_STOCK_THRESHOLD,
+            ).length,
+            color: STOCK_COLORS.low,
+        },
+        {
+            label: "In stock",
+            count: productsForStock.filter(
+                (p) => p.stock >= LOW_STOCK_THRESHOLD,
+            ).length,
+            color: STOCK_COLORS.healthy,
+        },
+    ];
+    const stockTotal = stockData.reduce((sum, item) => sum + item.count, 0);
     const rangeLabel =
         preset === "custom"
             ? `${formatInputDate(customFrom, "Start date")} to ${formatInputDate(customTo, "End date")}`
@@ -311,14 +355,76 @@ export default function AdminDashboardPage() {
             </div>
 
             {/* Secondary stats */}
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <StatCard
-                    label="Low stock items"
-                    value={String(stats.products.lowStock)}
-                    icon={AlertTriangle}
-                    accent="route"
-                    footnote="Fewer than 10 units in stock"
-                />
+            <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+                <div className="rounded-lg border border-ink/10 bg-white p-5 lg:col-span-2">
+                    <div className="flex items-start justify-between gap-3">
+                        <div>
+                            <p className="font-display text-sm font-semibold text-ink">
+                                Product stock
+                            </p>
+                            <p className="mt-0.5 text-xs text-ink/50">
+                                Products added in the selected period
+                            </p>
+                        </div>
+                        <div className="shrink-0 text-right">
+                            <p className="text-[10px] font-medium uppercase tracking-wide text-ink/45">
+                                Total
+                            </p>
+                            <p className="font-mono text-lg font-semibold leading-tight text-ink">
+                                {products === null ? "—" : stockTotal}
+                            </p>
+                        </div>
+                    </div>
+                    <div className="mt-4 h-56">
+                        {products === null ? (
+                            <ChartSkeleton />
+                        ) : (
+                            <ResponsiveContainer width="100%" height="100%">
+                                <BarChart data={stockData}>
+                                    <CartesianGrid
+                                        strokeDasharray="3 3"
+                                        vertical={false}
+                                        stroke="#00000010"
+                                    />
+                                    <XAxis
+                                        dataKey="label"
+                                        tick={{ fontSize: 11 }}
+                                    />
+                                    <YAxis
+                                        allowDecimals={false}
+                                        tick={{ fontSize: 11 }}
+                                        width={28}
+                                    />
+                                    <Tooltip />
+                                    <Bar
+                                        dataKey="count"
+                                        radius={[4, 4, 0, 0]}
+                                        cursor="pointer"
+                                        onClick={(entry) => {
+                                            const label = entry.payload
+                                                ?.label as string | undefined;
+                                            const stockFilter = label
+                                                ? STOCK_FILTERS_BY_LABEL[label]
+                                                : undefined;
+                                            if (stockFilter) {
+                                                navigate(
+                                                    `/admin/products?stock=${stockFilter}`,
+                                                );
+                                            }
+                                        }}
+                                    >
+                                        {stockData.map((d) => (
+                                            <Cell
+                                                key={d.label}
+                                                fill={d.color}
+                                            />
+                                        ))}
+                                    </Bar>
+                                </BarChart>
+                            </ResponsiveContainer>
+                        )}
+                    </div>
+                </div>
                 <StatCard
                     label="Average rating"
                     value={
@@ -418,9 +524,26 @@ export default function AdminDashboardPage() {
                 </div>
 
                 <div className="rounded-lg border border-black/5 bg-white p-5 shadow-sm">
-                    <h2 className="font-display text-sm font-semibold text-ink">
-                        Orders by status
-                    </h2>
+                    <div className="flex items-start justify-between gap-3">
+                        <div>
+                            <h2 className="font-display text-sm font-semibold text-ink">
+                                Orders
+                            </h2>
+                            <p className="mt-0.5 text-xs text-ink/50">
+                                All orders, current status
+                            </p>
+                        </div>
+                        <div className="shrink-0 text-right">
+                            <p className="text-[10px] font-medium uppercase tracking-wide text-ink/45">
+                                Total
+                            </p>
+                            <p className="font-mono text-lg font-semibold leading-tight text-ink">
+                                {stats.ordersByStatus
+                                    .filter((s) => s.status !== "cancelled")
+                                    .reduce((sum, s) => sum + s.count, 0)}
+                            </p>
+                        </div>
+                    </div>
                     <div className="mt-4 h-64">
                         <ResponsiveContainer width="100%" height="100%">
                             <BarChart
@@ -468,6 +591,17 @@ export default function AdminDashboardPage() {
                                     dataKey="count"
                                     radius={[0, 4, 4, 0]}
                                     barSize={16}
+                                    cursor="pointer"
+                                    onClick={(entry) => {
+                                        const status = entry.payload?.status as
+                                            | string
+                                            | undefined;
+                                        if (status) {
+                                            navigate(
+                                                `/admin/orders?status=${status}`,
+                                            );
+                                        }
+                                    }}
                                 >
                                     {stats.ordersByStatus.map((s) => (
                                         <Cell

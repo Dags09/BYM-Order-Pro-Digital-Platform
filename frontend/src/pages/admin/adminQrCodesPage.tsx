@@ -2,8 +2,8 @@ import { useEffect, useRef, useState, type FormEvent } from "react";
 import { QrCode, Upload, Power, ImageOff } from "lucide-react";
 import api from "../../lib/axios";
 import type { QRCodeEntry } from "../../types/qrcode";
-import { PageSkeleton } from "../../components/skeletonLoader";
 import { Skeleton } from "../../components/skeletonLoader";
+import { AdminQrCodesSkeleton } from "../../components/pageComponents/admin/adminPageSkeletons";
 
 const QR_TYPES: { type: QRCodeEntry["type"]; label: string }[] = [
     { type: "gcash", label: "GCash" },
@@ -283,7 +283,7 @@ export default function AdminQrCodesPage() {
     };
 
     if (loading) {
-        return <PageSkeleton variant="cards" rows={2} />;
+        return <AdminQrCodesSkeleton />;
     }
 
     if (error) {

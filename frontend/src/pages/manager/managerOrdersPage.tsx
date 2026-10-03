@@ -17,7 +17,7 @@ import api from "../../lib/axios";
 import type { Order, OrderStatus } from "../../types/order";
 import { formatPrice, formatDateTime } from "../../utils/formatters";
 import { STATUS_COLORS, STATUS_LABELS } from "../../utils/constant";
-import { PageSkeleton } from "../../components/skeletonLoader";
+import { ManagerOrdersSkeleton } from "../../components/pageComponents/manager/managerSkeletons";
 
 type FilterTab = "all" | OrderStatus;
 type ViewMode = "list" | "card";
@@ -258,7 +258,9 @@ export default function ManagerOrdersPage() {
     ]);
 
     if (loading) {
-        return <PageSkeleton variant="table" />;
+        return (
+            <ManagerOrdersSkeleton viewMode={viewMode} cardSize={cardSize} />
+        );
     }
 
     if (error) {

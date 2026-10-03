@@ -12,8 +12,8 @@ import {
 import api from "../../lib/axios";
 import type { Category } from "../../types/category";
 import { formatShortDate } from "../../utils/formatters";
-import { PageSkeleton } from "../../components/skeletonLoader";
 import { Skeleton } from "../../components/skeletonLoader";
+import { ManagerCategoriesSkeleton } from "../../components/pageComponents/manager/managerSkeletons";
 
 const PAGE_SIZE = 9;
 
@@ -141,7 +141,7 @@ export default function ManagerCategoriesPage() {
     const labelClass = "mb-1.5 block text-sm font-medium text-ink";
 
     if (loading) {
-        return <PageSkeleton variant="table" />;
+        return <ManagerCategoriesSkeleton />;
     }
 
     return (

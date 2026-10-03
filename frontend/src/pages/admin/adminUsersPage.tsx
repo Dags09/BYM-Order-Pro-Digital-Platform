@@ -1,14 +1,18 @@
-import { useEffect, useState, type FormEvent } from "react";
-import { UserPlus, ShieldCheck, Truck, ShoppingBag, Power } from "lucide-react";
+import { useEffect, useState } from "react";
+import {
+    UserPlus,
+    ShieldCheck,
+    Truck,
+    ShoppingBag,
+    Power,
+    X,
+} from "lucide-react";
 import api from "../../lib/axios";
 import { formatShortDate } from "../../utils/formatters";
 import type { User } from "../../types/user";
-import { Skeleton, TableRowsSkeleton } from "../../components/skeletonLoader";
-
-const ROLE_OPTIONS = [
-    { value: "manager", label: "Manager" },
-    { value: "staff", label: "Delivery staff" },
-] as const;
+import { Skeleton } from "../../components/skeletonLoader";
+import { AdminUsersTableSkeleton } from "../../components/pageComponents/admin/adminPageSkeletons";
+import AddStaffUserModal from "../../components/pageComponents/admin/addStaffUserModal";
 
 const ROLE_BADGE: Record<
     string,
@@ -33,16 +37,6 @@ const ROLE_BADGE: Record<
     },
 };
 
-const emptyForm = {
-    firstName: "",
-    lastName: "",
-    username: "",
-    email: "",
-    phoneNumber: "",
-    password: "",
-    role: "manager" as (typeof ROLE_OPTIONS)[number]["value"],
-};
-
 function getErrorMessage(err: unknown, fallback: string) {
     const message = (err as { response?: { data?: { message?: string } } })
         .response?.data?.message;
@@ -53,11 +47,8 @@ export default function AdminUsersPage() {
     const [users, setUsers] = useState<User[] | null>(null);
     const [loadError, setLoadError] = useState<string | null>(null);
     const [togglingId, setTogglingId] = useState<string | null>(null);
-
-    const [form, setForm] = useState(emptyForm);
-    const [submitting, setSubmitting] = useState(false);
-    const [formError, setFormError] = useState<string | null>(null);
     const [formSuccess, setFormSuccess] = useState<string | null>(null);
+    const [showAddUser, setShowAddUser] = useState(false);
 
     const loadUsers = () => {
         setLoadError(null);
@@ -75,27 +66,6 @@ export default function AdminUsersPage() {
     const staffAndManagers = (users ?? []).filter(
         (u) => u.role === "manager" || u.role === "staff",
     );
-
-    const handleSubmit = async (e: FormEvent) => {
-        e.preventDefault();
-        setFormError(null);
-        setFormSuccess(null);
-        setSubmitting(true);
-        try {
-            const { data } = await api.post("/auth/register-staff", form);
-            setFormSuccess(
-                `${data.user.fullName} was registered as ${ROLE_BADGE[data.user.role]?.label ?? data.user.role}.`,
-            );
-            setForm(emptyForm);
-            loadUsers();
-        } catch (err) {
-            setFormError(
-                getErrorMessage(err, "Couldn't register this account."),
-            );
-        } finally {
-            setSubmitting(false);
-        }
-    };
 
     const handleToggleStatus = async (user: User) => {
         setTogglingId(user._id);
@@ -118,11 +88,6 @@ export default function AdminUsersPage() {
         }
     };
 
-    const inputClass =
-        "w-full rounded-md border-2 border-[var(--color-ink)]/20 bg-[var(--color-kraft)]/40 px-3 py-2 text-sm text-[var(--color-ink)] outline-none transition focus:border-[var(--color-crate-light)]";
-    const labelClass =
-        "mb-1.5 block text-sm font-medium text-[var(--color-ink)]";
-
     return (
         <div className="space-y-6">
             <div>
@@ -135,152 +100,40 @@ export default function AdminUsersPage() {
                 </p>
             </div>
 
-            {/* Register form */}
-            <form
-                onSubmit={handleSubmit}
-                className="rounded-lg border border-[var(--color-ink)]/10 bg-white p-5 shadow-sm"
-            >
-                <div className="mb-4 flex items-center gap-2">
-                    <UserPlus
-                        className="h-4 w-4 text-[var(--color-crate-light)]"
-                        strokeWidth={1.75}
-                    />
-                    <h2 className="font-[family-name:var(--font-display)] text-sm font-semibold text-[var(--color-ink)]">
-                        Register a new account
-                    </h2>
-                </div>
-
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                    <div>
-                        <label className={labelClass}>First name</label>
-                        <input
-                            required
-                            className={inputClass}
-                            value={form.firstName}
-                            onChange={(e) =>
-                                setForm({
-                                    ...form,
-                                    firstName: e.target.value,
-                                })
-                            }
-                        />
-                    </div>
-                    <div>
-                        <label className={labelClass}>Last name</label>
-                        <input
-                            required
-                            className={inputClass}
-                            value={form.lastName}
-                            onChange={(e) =>
-                                setForm({ ...form, lastName: e.target.value })
-                            }
-                        />
-                    </div>
-                    <div>
-                        <label className={labelClass}>Username</label>
-                        <input
-                            required
-                            className={inputClass}
-                            value={form.username}
-                            onChange={(e) =>
-                                setForm({ ...form, username: e.target.value })
-                            }
-                        />
-                    </div>
-                    <div>
-                        <label className={labelClass}>Email</label>
-                        <input
-                            required
-                            type="email"
-                            className={inputClass}
-                            value={form.email}
-                            onChange={(e) =>
-                                setForm({ ...form, email: e.target.value })
-                            }
-                        />
-                    </div>
-                    <div>
-                        <label className={labelClass}>Phone number</label>
-                        <input
-                            required
-                            placeholder="09XXXXXXXXX"
-                            className={inputClass}
-                            value={form.phoneNumber}
-                            onChange={(e) =>
-                                setForm({
-                                    ...form,
-                                    phoneNumber: e.target.value,
-                                })
-                            }
-                        />
-                    </div>
-                    <div>
-                        <label className={labelClass}>Role</label>
-                        <select
-                            className={inputClass}
-                            value={form.role}
-                            onChange={(e) =>
-                                setForm({
-                                    ...form,
-                                    role: e.target.value as typeof form.role,
-                                })
-                            }
-                        >
-                            {ROLE_OPTIONS.map((opt) => (
-                                <option key={opt.value} value={opt.value}>
-                                    {opt.label}
-                                </option>
-                            ))}
-                        </select>
-                    </div>
-                    <div className="sm:col-span-2">
-                        <label className={labelClass}>Temporary password</label>
-                        <input
-                            required
-                            type="password"
-                            className={inputClass}
-                            value={form.password}
-                            onChange={(e) =>
-                                setForm({ ...form, password: e.target.value })
-                            }
-                        />
-                        <p className="mt-1 text-xs text-[var(--color-ink)]/50">
-                            At least 8 characters, including 3 numbers. The new
-                            user gets this by email and can change it after
-                            logging in.
-                        </p>
-                    </div>
-                </div>
-
-                {formError && (
-                    <p className="mt-4 rounded-md border border-[var(--color-route)]/20 bg-[var(--color-route)]/5 px-3 py-2 text-sm text-[var(--color-route)]">
-                        {formError}
-                    </p>
-                )}
-                {formSuccess && (
-                    <p className="mt-4 rounded-md border border-[var(--color-crate-light)]/20 bg-[var(--color-crate-light)]/5 px-3 py-2 text-sm text-[var(--color-crate-light)]">
-                        {formSuccess}
-                    </p>
-                )}
-
-                <button
-                    type="submit"
-                    disabled={submitting}
-                    className="mt-4 flex items-center gap-2 rounded-md bg-[var(--color-crate-light)] px-4 py-2 text-sm font-medium text-white transition hover:opacity-90 disabled:opacity-60"
+            {formSuccess && (
+                <div
+                    role="status"
+                    className="flex items-start justify-between gap-3 rounded-md border border-crate-light/20 bg-crate-light/5 px-3 py-2 text-sm text-crate-light"
                 >
-                    {submitting && (
-                        <Skeleton className="h-4 w-4 rounded-full bg-white/50" />
-                    )}
-                    Register account
-                </button>
-            </form>
+                    <span>{formSuccess}</span>
+                    <button
+                        type="button"
+                        onClick={() => setFormSuccess(null)}
+                        aria-label="Dismiss success message"
+                        className="shrink-0 rounded p-0.5 hover:bg-crate-light/10"
+                    >
+                        <X className="h-4 w-4" />
+                    </button>
+                </div>
+            )}
 
             {/* Users table */}
             <div className="overflow-hidden rounded-lg border border-[var(--color-ink)]/10 bg-white shadow-sm">
-                <div className="border-b border-[var(--color-ink)]/10 px-5 py-4">
+                <div className="flex items-center justify-between gap-3 border-b border-[var(--color-ink)]/10 px-5 py-4">
                     <h2 className="font-[family-name:var(--font-display)] text-sm font-semibold text-[var(--color-ink)]">
                         Managers &amp; staff
                     </h2>
+                    <button
+                        type="button"
+                        onClick={() => {
+                            setFormSuccess(null);
+                            setShowAddUser(true);
+                        }}
+                        className="flex shrink-0 items-center gap-1.5 rounded-md bg-crate px-3 py-1.5 text-xs font-medium text-white transition hover:bg-crate-dark sm:px-4 sm:py-2 sm:text-sm"
+                    >
+                        <UserPlus className="h-4 w-4" strokeWidth={1.75} />
+                        Add user
+                    </button>
                 </div>
 
                 {loadError && (
@@ -290,16 +143,14 @@ export default function AdminUsersPage() {
                 )}
 
                 {!loadError && users === null && (
-                    <div className="px-5 py-2">
-                        <TableRowsSkeleton rows={4} />
-                    </div>
+                    <AdminUsersTableSkeleton />
                 )}
 
                 {!loadError &&
                     users !== null &&
                     staffAndManagers.length === 0 && (
                         <p className="px-5 py-6 text-sm text-[var(--color-ink)]/50">
-                            No managers or staff yet. Register one above.
+                            No managers or staff yet. Add a user to get started.
                         </p>
                     )}
 
@@ -399,6 +250,16 @@ export default function AdminUsersPage() {
                     </div>
                 )}
             </div>
+
+            {showAddUser && (
+                <AddStaffUserModal
+                    onClose={() => setShowAddUser(false)}
+                    onCreated={(message) => {
+                        setFormSuccess(message);
+                        loadUsers();
+                    }}
+                />
+            )}
         </div>
     );
 }

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { RotateCcw, SlidersHorizontal, X } from "lucide-react";
+import { RotateCcw, Search, SlidersHorizontal, X } from "lucide-react";
 import type { Category } from "../../../types/category";
 
 export type StockFilter =
@@ -28,8 +28,10 @@ export default function ManagerProductFilterModal({
     onApply: (category: string[], stock: StockFilter) => void;
     onClose: () => void;
 }) {
-    const [selectedCategories, setSelectedCategories] = useState(categoryFilter);
+    const [selectedCategories, setSelectedCategories] =
+        useState(categoryFilter);
     const [selectedStock, setSelectedStock] = useState(stockFilter);
+    const [categorySearch, setCategorySearch] = useState("");
 
     useEffect(() => {
         const handleKeyDown = (event: KeyboardEvent) => {
@@ -70,6 +72,9 @@ export default function ManagerProductFilterModal({
             name: category.name,
         })),
     ];
+    const filteredCategoryOptions = categoryOptions.filter((option) =>
+        option.name.toLowerCase().includes(categorySearch.trim().toLowerCase()),
+    );
 
     return (
         <div
@@ -139,14 +144,15 @@ export default function ManagerProductFilterModal({
                         </div>
                         <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-3">
                             {STOCK_FILTERS.map((option) => {
-                                const selected =
-                                    selectedStock === option.value;
+                                const selected = selectedStock === option.value;
                                 return (
                                     <button
                                         key={option.value}
                                         type="button"
                                         aria-pressed={selected}
-                                        onClick={() => selectStock(option.value)}
+                                        onClick={() =>
+                                            selectStock(option.value)
+                                        }
                                         className={`flex min-h-20 flex-col items-center justify-center gap-2 rounded-lg border px-2 py-3 text-center text-xs font-semibold transition-colors sm:text-sm ${
                                             selected
                                                 ? "border-crate bg-crate/10 text-crate"
@@ -190,40 +196,61 @@ export default function ManagerProductFilterModal({
                                     : `${selectedCategories.length} selected`}
                             </span>
                         </div>
-                        <div className="grid max-h-52 grid-cols-1 gap-2 overflow-y-auto pr-1 sm:grid-cols-2">
-                            {categoryOptions.map((option) => {
-                                const selected =
-                                    selectedCategories.includes(option.id);
-                                return (
-                                    <button
-                                        key={option.id}
-                                        type="button"
-                                        aria-pressed={selected}
-                                        onClick={() => toggleCategory(option.id)}
-                                        className={`flex items-center gap-3 rounded-lg border px-3 py-3 text-left text-sm transition-colors ${
-                                            selected
-                                                ? "border-crate bg-white text-crate"
-                                                : "border-ink/10 bg-white/70 text-ink hover:border-crate/40 hover:bg-white"
-                                        }`}
-                                    >
-                                        <span
-                                            className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full border ${
+                        <div className="relative mb-3">
+                            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink/35" />
+                            <input
+                                type="search"
+                                value={categorySearch}
+                                onChange={(event) =>
+                                    setCategorySearch(event.target.value)
+                                }
+                                placeholder="Search categories"
+                                aria-label="Search categories"
+                                className="w-full rounded-md border-2 border-ink/15 bg-white py-2 pl-9 pr-3 text-sm text-ink outline-none transition focus:border-crate"
+                            />
+                        </div>
+                        {filteredCategoryOptions.length === 0 ? (
+                            <p className="rounded-lg border border-dashed border-ink/20 bg-white/60 p-5 text-center text-sm text-ink/55">
+                                No categories match your search.
+                            </p>
+                        ) : (
+                            <div className="grid max-h-52 grid-cols-1 gap-2 overflow-y-auto pr-1 sm:grid-cols-2">
+                                {filteredCategoryOptions.map((option) => {
+                                    const selected =
+                                        selectedCategories.includes(option.id);
+                                    return (
+                                        <button
+                                            key={option.id}
+                                            type="button"
+                                            aria-pressed={selected}
+                                            onClick={() =>
+                                                toggleCategory(option.id)
+                                            }
+                                            className={`flex items-center gap-3 rounded-lg border px-3 py-3 text-left text-sm transition-colors ${
                                                 selected
-                                                    ? "border-crate"
-                                                    : "border-ink/30"
+                                                    ? "border-crate bg-white text-crate"
+                                                    : "border-ink/10 bg-white/70 text-ink hover:border-crate/40 hover:bg-white"
                                             }`}
                                         >
-                                            {selected && (
-                                                <span className="h-2 w-2 rounded-full bg-crate" />
-                                            )}
-                                        </span>
-                                        <span className="truncate">
-                                            {option.name}
-                                        </span>
-                                    </button>
-                                );
-                            })}
-                        </div>
+                                            <span
+                                                className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full border ${
+                                                    selected
+                                                        ? "border-crate"
+                                                        : "border-ink/30"
+                                                }`}
+                                            >
+                                                {selected && (
+                                                    <span className="h-2 w-2 rounded-full bg-crate" />
+                                                )}
+                                            </span>
+                                            <span className="truncate">
+                                                {option.name}
+                                            </span>
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                        )}
                     </section>
                 </div>
 

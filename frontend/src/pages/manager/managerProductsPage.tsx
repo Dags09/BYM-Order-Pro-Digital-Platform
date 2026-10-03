@@ -25,11 +25,11 @@ import api from "../../lib/axios";
 import type { Product } from "../../types/product";
 import type { Category } from "../../types/category";
 import { formatPrice } from "../../utils/formatters";
-import { PageSkeleton } from "../../components/skeletonLoader";
 import { Skeleton } from "../../components/skeletonLoader";
 import ManagerProductFilterModal, {
     type StockFilter,
 } from "../../components/pageComponents/manager/managerProductFilterModal";
+import { ManagerProductsSkeleton } from "../../components/pageComponents/manager/managerSkeletons";
 
 const LOW_STOCK_THRESHOLD = 5;
 
@@ -142,8 +142,7 @@ export default function ManagerProductsPage() {
     const [categoryFilter, setCategoryFilter] = useState<string[]>(["all"]);
     const [stockFilter, setStockFilter] = useState<StockFilter>(() =>
         initialStockFilter === "low-stock" ||
-        initialStockFilter === "out-of-stock" ||
-        initialStockFilter === "in-stock"
+        initialStockFilter === "out-of-stock"
             ? initialStockFilter
             : "all",
     );
@@ -206,7 +205,7 @@ export default function ManagerProductsPage() {
             (stockFilter === "low-stock" &&
                 p.stock > 0 &&
                 p.stock <= LOW_STOCK_THRESHOLD) ||
-            (stockFilter === "in-stock" && p.stock > LOW_STOCK_THRESHOLD);
+            (stockFilter === "in-stock" && p.stock > 0);
         return matchesSearch && matchesCategory && matchesStock;
     });
 
@@ -349,7 +348,7 @@ export default function ManagerProductsPage() {
     const labelClass = "mb-1.5 block text-sm font-medium text-ink";
 
     if (loading) {
-        return <PageSkeleton variant="table" />;
+        return <ManagerProductsSkeleton viewMode={viewMode} />;
     }
 
     return (
@@ -408,8 +407,8 @@ export default function ManagerProductsPage() {
                             strokeWidth={1.75}
                         />
                         Filter
-                        {(!categoryFilter.includes("all") &&
-                            categoryFilter.length > 0 ||
+                        {((!categoryFilter.includes("all") &&
+                            categoryFilter.length > 0) ||
                             stockFilter !== "all") &&
                             !showFilterModal && (
                                 <span className="absolute -right-1 -top-1 h-2.5 w-2.5 rounded-full bg-signal" />

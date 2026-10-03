@@ -1,6 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
 import { Navigate } from "react-router-dom";
-import { Search, LayoutGrid, List as ListIcon } from "lucide-react";
+import {
+    Search,
+    LayoutGrid,
+    List as ListIcon,
+    SlidersHorizontal,
+} from "lucide-react";
 import api from "../../lib/axios";
 import type { Product } from "../../types/product";
 import type { Category } from "../../types/category";
@@ -9,11 +14,11 @@ import NavBar from "../../components/pageComponents/customer/homePage/navBar";
 import Footer from "../../components/pageComponents/customer/homePage/footer";
 import ProductCard from "../../components/pageComponents/customer/shopPage/productCard";
 import ProductListItem from "../../components/pageComponents/customer/shopPage/productListItem";
-import CategoryFilter from "../../components/pageComponents/customer/shopPage/categoryFilter";
+import ShopFilterModal from "../../components/pageComponents/customer/shopPage/shopFilterModal";
 import {
-    CardGridSkeleton,
-    TableRowsSkeleton,
-} from "../../components/skeletonLoader";
+    ShopGridSkeleton,
+    ShopListSkeleton,
+} from "../../components/pageComponents/customer/customerSkeletons";
 
 type ViewMode = "grid" | "list";
 const VIEW_MODE_STORAGE_KEY = "bym-shop-view";
@@ -26,7 +31,8 @@ export default function ShopPage() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [search, setSearch] = useState("");
-    const [selectedCategory, setSelectedCategory] = useState("all");
+    const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+    const [showFilterModal, setShowFilterModal] = useState(false);
     const [viewMode, setViewMode] = useState<ViewMode>(() => {
         const stored = localStorage.getItem(VIEW_MODE_STORAGE_KEY);
         return stored === "list" ? "list" : "grid";
@@ -63,14 +69,14 @@ export default function ShopPage() {
     const filteredProducts = useMemo(() => {
         return products.filter((product) => {
             const matchesCategory =
-                selectedCategory === "all" ||
-                product.category?._id === selectedCategory;
+                selectedCategories.length === 0 ||
+                selectedCategories.includes(product.category?._id ?? "");
             const matchesSearch = product.name
                 .toLowerCase()
                 .includes(search.trim().toLowerCase());
             return matchesCategory && matchesSearch;
         });
-    }, [products, selectedCategory, search]);
+    }, [products, selectedCategories, search]);
 
     if (!isAuthenticated) {
         return <Navigate to="/login" replace />;
@@ -103,65 +109,85 @@ export default function ShopPage() {
                                     className="w-full rounded-md border-2 border-ink/20 bg-white py-2 pl-9 pr-3 text-sm text-ink outline-none transition focus:border-crate"
                                 />
                             </div>
-
-                            <div
-                                role="group"
-                                aria-label="Switch product view"
-                                className="flex flex-shrink-0 rounded-md border-2 border-ink/20 bg-white p-0.5"
-                            >
-                                <button
-                                    type="button"
-                                    onClick={() => setViewMode("grid")}
-                                    aria-pressed={viewMode === "grid"}
-                                    aria-label="Tile view"
-                                    className={`flex items-center gap-1.5 rounded px-2.5 py-1.5 text-xs font-semibold transition ${
-                                        viewMode === "grid"
-                                            ? "bg-crate text-kraft"
-                                            : "text-ink/50 hover:text-ink"
-                                    }`}
-                                >
-                                    <LayoutGrid className="h-3.5 w-3.5" />
-                                    <span className="hidden sm:inline">
-                                        Tiles
-                                    </span>
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={() => setViewMode("list")}
-                                    aria-pressed={viewMode === "list"}
-                                    aria-label="Table view"
-                                    className={`flex items-center gap-1.5 rounded px-2.5 py-1.5 text-xs font-semibold transition ${
-                                        viewMode === "list"
-                                            ? "bg-crate text-kraft"
-                                            : "text-ink/50 hover:text-ink"
-                                    }`}
-                                >
-                                    <ListIcon className="h-3.5 w-3.5" />
-                                    <span className="hidden sm:inline">
-                                        List
-                                    </span>
-                                </button>
-                            </div>
                         </div>
                     </div>
 
-                    {!loading && !error && categories.length > 0 && (
-                        <div className="mb-6">
-                            <CategoryFilter
-                                categories={categories}
-                                selected={selectedCategory}
-                                onSelect={setSelectedCategory}
-                            />
+                    <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+                        <div className="flex flex-wrap gap-2">
+                            <button
+                                type="button"
+                                onClick={() => setSelectedCategories([])}
+                                aria-pressed={selectedCategories.length === 0}
+                                className={`rounded-full border-2 px-4 py-1.5 font-mono text-xs transition ${
+                                    selectedCategories.length === 0
+                                        ? "border-ink bg-ink text-kraft"
+                                        : "border-ink/20 bg-white text-ink/70 hover:border-ink/40"
+                                }`}
+                            >
+                                All
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setShowFilterModal(true)}
+                                aria-haspopup="dialog"
+                                aria-expanded={showFilterModal}
+                                aria-pressed={selectedCategories.length > 0}
+                                className={`relative inline-flex items-center gap-2 rounded-full border-2 px-4 py-1.5 font-mono text-xs transition ${
+                                    selectedCategories.length > 0
+                                        ? "border-ink bg-ink text-kraft"
+                                        : "border-ink/20 bg-white text-ink/70 hover:border-ink/40"
+                                }`}
+                            >
+                                <SlidersHorizontal className="h-3.5 w-3.5" />
+                                Filter
+                                {selectedCategories.length > 0 && (
+                                    <span className="rounded-full bg-signal px-1.5 font-sans text-[10px] font-semibold text-ink">
+                                        {selectedCategories.length}
+                                    </span>
+                                )}
+                            </button>
                         </div>
-                    )}
+                        <div
+                            role="group"
+                            aria-label="Switch product view"
+                            className="flex flex-shrink-0 rounded-md border-2 border-ink/20 bg-white p-0.5"
+                        >
+                            <button
+                                type="button"
+                                onClick={() => setViewMode("grid")}
+                                aria-pressed={viewMode === "grid"}
+                                aria-label="Tile view"
+                                className={`flex items-center gap-1.5 rounded px-2.5 py-1.5 text-xs font-semibold transition ${
+                                    viewMode === "grid"
+                                        ? "bg-crate text-kraft"
+                                        : "text-ink/50 hover:text-ink"
+                                }`}
+                            >
+                                <LayoutGrid className="h-3.5 w-3.5" />
+                                <span className="hidden sm:inline">Tiles</span>
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setViewMode("list")}
+                                aria-pressed={viewMode === "list"}
+                                aria-label="Table view"
+                                className={`flex items-center gap-1.5 rounded px-2.5 py-1.5 text-xs font-semibold transition ${
+                                    viewMode === "list"
+                                        ? "bg-crate text-kraft"
+                                        : "text-ink/50 hover:text-ink"
+                                }`}
+                            >
+                                <ListIcon className="h-3.5 w-3.5" />
+                                <span className="hidden sm:inline">List</span>
+                            </button>
+                        </div>
+                    </div>
 
                     {loading ? (
                         viewMode === "grid" ? (
-                            <CardGridSkeleton count={8} />
+                            <ShopGridSkeleton count={8} />
                         ) : (
-                            <div className="overflow-hidden rounded-lg border-2 border-ink bg-white p-4">
-                                <TableRowsSkeleton rows={8} />
-                            </div>
+                            <ShopListSkeleton rows={8} />
                         )
                     ) : error ? (
                         <p className="font-mono text-sm text-route">{error}</p>
@@ -204,6 +230,18 @@ export default function ShopPage() {
                     )}
                 </div>
             </main>
+
+            {showFilterModal && (
+                <ShopFilterModal
+                    categories={categories}
+                    selectedCategories={selectedCategories}
+                    onApply={(categoryIds) => {
+                        setSelectedCategories(categoryIds);
+                        setShowFilterModal(false);
+                    }}
+                    onClose={() => setShowFilterModal(false)}
+                />
+            )}
 
             <Footer />
         </div>

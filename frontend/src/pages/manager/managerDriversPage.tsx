@@ -10,7 +10,7 @@ import {
 } from "lucide-react";
 import api from "../../lib/axios";
 import { formatShortDate } from "../../utils/formatters";
-import { PageSkeleton } from "../../components/skeletonLoader";
+import { ManagerDriversSkeleton } from "../../components/pageComponents/manager/managerSkeletons";
 
 interface Driver {
     _id: string;
@@ -62,7 +62,7 @@ export default function ManagerDriversPage() {
     });
 
     if (loading) {
-        return <PageSkeleton variant="table" />;
+        return <ManagerDriversSkeleton />;
     }
 
     return (

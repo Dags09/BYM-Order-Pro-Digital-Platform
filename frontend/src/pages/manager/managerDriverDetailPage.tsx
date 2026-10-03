@@ -17,7 +17,7 @@ import {
     formatShortDate,
 } from "../../utils/formatters";
 import { STATUS_COLORS, STATUS_LABELS } from "../../utils/constant";
-import { PageSkeleton } from "../../components/skeletonLoader";
+import { ManagerDriverDetailSkeleton } from "../../components/pageComponents/manager/managerSkeletons";
 
 type FilterTab = "all" | OrderStatus;
 
@@ -93,7 +93,7 @@ export default function ManagerDriverDetailPage() {
     }, [id]);
 
     if (loading) {
-        return <PageSkeleton variant="detail" />;
+        return <ManagerDriverDetailSkeleton />;
     }
 
     if (error || !driver) {

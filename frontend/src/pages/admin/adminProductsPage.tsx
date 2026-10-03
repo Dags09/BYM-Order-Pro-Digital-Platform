@@ -1,22 +1,39 @@
 import { useEffect, useState } from "react";
-import { Search, Package, AlertTriangle } from "lucide-react";
+import { useSearchParams } from "react-router-dom";
+import {
+    Search,
+    Package,
+    AlertTriangle,
+    SlidersHorizontal,
+} from "lucide-react";
 import api from "../../lib/axios";
 import type { Product } from "../../types/product";
 import type { Category } from "../../types/category";
 import { formatPrice, formatShortDate } from "../../utils/formatters";
-import { PageSkeleton } from "../../components/skeletonLoader";
+import ManagerProductFilterModal, {
+    type StockFilter,
+} from "../../components/pageComponents/manager/managerProductFilterModal";
+import { AdminProductsSkeleton } from "../../components/pageComponents/admin/adminPageSkeletons";
 
 const LOW_STOCK_THRESHOLD = 10;
-type StockFilter = "all" | "low-stock" | "out-of-stock";
 
 export default function AdminProductsPage() {
+    const [searchParams] = useSearchParams();
+    const initialStockFilter = searchParams.get("stock");
     const [products, setProducts] = useState<Product[]>([]);
     const [categories, setCategories] = useState<Category[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [search, setSearch] = useState("");
-    const [categoryFilter, setCategoryFilter] = useState("all");
-    const [stockFilter, setStockFilter] = useState<StockFilter>("all");
+    const [categoryFilter, setCategoryFilter] = useState<string[]>(["all"]);
+    const [stockFilter, setStockFilter] = useState<StockFilter>(() =>
+        initialStockFilter === "low-stock" ||
+        initialStockFilter === "out-of-stock" ||
+        initialStockFilter === "in-stock"
+            ? initialStockFilter
+            : "all",
+    );
+    const [showFilterModal, setShowFilterModal] = useState(false);
 
     useEffect(() => {
         Promise.all([
@@ -35,18 +52,25 @@ export default function AdminProductsPage() {
         const matchesSearch = search.trim()
             ? p.name.toLowerCase().includes(search.trim().toLowerCase())
             : true;
+        const productCategoryId =
+            typeof p.category === "object" ? p.category?._id : p.category;
         const matchesCategory =
-            categoryFilter === "all" || p.category?._id === categoryFilter;
+            categoryFilter.includes("all") ||
+            categoryFilter.length === 0 ||
+            (productCategoryId !== undefined &&
+                categoryFilter.includes(productCategoryId));
         const matchesStock =
             stockFilter === "all" ||
-            (stockFilter === "out-of-stock"
-                ? p.stock === 0
-                : p.stock > 0 && p.stock < LOW_STOCK_THRESHOLD);
+            (stockFilter === "out-of-stock" && p.stock === 0) ||
+            (stockFilter === "low-stock" &&
+                p.stock > 0 &&
+                p.stock < LOW_STOCK_THRESHOLD) ||
+            (stockFilter === "in-stock" && p.stock > 0);
         return matchesSearch && matchesCategory && matchesStock;
     });
 
     if (loading) {
-        return <PageSkeleton variant="table" />;
+        return <AdminProductsSkeleton />;
     }
 
     if (error) {
@@ -69,7 +93,7 @@ export default function AdminProductsPage() {
                 </p>
             </div>
 
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
                 <div className="relative">
                     <Search
                         className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink/30"
@@ -79,35 +103,29 @@ export default function AdminProductsPage() {
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
                         placeholder="Search products"
-                        className="w-full rounded-md border-2 border-ink/20 bg-white py-2 pl-9 pr-3 text-sm text-ink outline-none transition focus:border-crate sm:w-72"
+                        className="w-full rounded-md border-2 border-ink/20 bg-white py-2 pl-9 pr-3 text-sm text-ink outline-none transition focus:border-crate sm:w-64"
                     />
                 </div>
-                <div className="flex flex-col gap-3 sm:flex-row">
-                    <select
-                        value={categoryFilter}
-                        onChange={(e) => setCategoryFilter(e.target.value)}
-                        className="rounded-md border-2 border-ink/20 bg-white px-3 py-2 text-sm text-ink outline-none transition focus:border-crate"
-                    >
-                        <option value="all">All categories</option>
-                        {categories.map((c) => (
-                            <option key={c._id} value={c._id}>
-                                {c.name}
-                            </option>
-                        ))}
-                    </select>
-                    <select
-                        value={stockFilter}
-                        onChange={(e) =>
-                            setStockFilter(e.target.value as StockFilter)
-                        }
-                        aria-label="Filter by stock status"
-                        className="rounded-md border-2 border-ink/20 bg-white px-3 py-2 text-sm text-ink outline-none transition focus:border-crate"
-                    >
-                        <option value="all">All</option>
-                        <option value="low-stock">Low stock</option>
-                        <option value="out-of-stock">Out of stock</option>
-                    </select>
-                </div>
+                <button
+                    type="button"
+                    onClick={() => setShowFilterModal(true)}
+                    aria-haspopup="dialog"
+                    aria-expanded={showFilterModal}
+                    className={`relative flex items-center justify-center gap-1.5 rounded-md border px-3 py-2 text-sm font-medium transition-colors ${
+                        showFilterModal
+                            ? "border-crate bg-crate text-white"
+                            : "border-ink/20 bg-white text-ink/70 hover:text-ink"
+                    }`}
+                >
+                    <SlidersHorizontal className="h-4 w-4" strokeWidth={1.75} />
+                    Filter
+                    {((!categoryFilter.includes("all") &&
+                        categoryFilter.length > 0) ||
+                        stockFilter !== "all") &&
+                        !showFilterModal && (
+                            <span className="absolute -right-1 -top-1 h-2.5 w-2.5 rounded-full bg-signal" />
+                        )}
+                </button>
             </div>
 
             {filtered.length === 0 ? (
@@ -204,6 +222,20 @@ export default function AdminProductsPage() {
                         </table>
                     </div>
                 </div>
+            )}
+
+            {showFilterModal && (
+                <ManagerProductFilterModal
+                    categories={categories}
+                    categoryFilter={categoryFilter}
+                    stockFilter={stockFilter}
+                    onApply={(categories, stock) => {
+                        setCategoryFilter(categories);
+                        setStockFilter(stock);
+                        setShowFilterModal(false);
+                    }}
+                    onClose={() => setShowFilterModal(false)}
+                />
             )}
         </div>
     );
